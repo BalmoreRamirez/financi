@@ -112,8 +112,10 @@ const summaryCards = computed(() => [
               </div>
             </div>
             <div class="text-right">
-              <p class="font-semibold text-green-600">+{{ formatCurrency(investment.ganancia) }}</p>
-              <p class="text-xs text-gray-500">ganancia</p>
+              <p class="font-semibold" :class="investment.vendida ? 'text-green-600' : 'text-orange-500'">
+                {{ investment.vendida ? '+' : '~' }}{{ formatCurrency(investment.vendida ? investment.gananciaReal : investment.gananciaEstimada) }}
+              </p>
+              <p class="text-xs text-gray-500">{{ investment.vendida ? 'realizada' : 'estimada' }}</p>
             </div>
           </div>
         </div>

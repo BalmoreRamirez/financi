@@ -4,6 +4,8 @@ import { useFinanceStore, type Credit } from '../stores/finance'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
+import Select from 'primevue/select'
+import Message from 'primevue/message'
 
 const store = useFinanceStore()
 
@@ -12,6 +14,10 @@ const showPaymentsModal = ref(false)
 const editingCredit = ref<Credit | null>(null)
 const selectedCredit = ref<Credit | null>(null)
 const isEditing = ref(false)
+const paymentError = ref('')
+const paymentSuccess = ref('')
+const creditError = ref('')
+const creditSuccess = ref('')
 
 const form = ref({
   nombre: '',
@@ -19,14 +25,23 @@ const form = ref({
   interes: 0,
   abonado: 0,
   fechaInicio: '',
-  fechaFin: ''
+  fechaFin: '',
+  origenAccountId: null as number | null  // RN-04: Cuenta de origen
 })
 
 const newPayment = ref({
   monto: 0,
   fecha: new Date().toISOString().split('T')[0] ?? '',
-  nota: ''
+  nota: '',
+  origenAccountId: null as number | null
 })
+
+// RN-04: Solo cuentas Caja o Banco para recibir el dinero
+const cashAccounts = computed(() => 
+  store.accounts
+    .filter(a => a.nombre === 'Caja' || a.nombre === 'Banco')
+    .map(a => ({ label: a.nombre, value: a.id }))
+)
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value)
@@ -59,13 +74,16 @@ const maxPaymentAmount = computed(() => {
 const openNewModal = () => {
   isEditing.value = false
   editingCredit.value = null
+  creditError.value = ''
+  creditSuccess.value = ''
   form.value = {
     nombre: '',
     monto: 0,
     interes: 0,
     abonado: 0,
     fechaInicio: new Date().toISOString().split('T')[0] ?? '',
-    fechaFin: ''
+    fechaFin: '',
+    origenAccountId: null
   }
   showModal.value = true
 }
@@ -73,13 +91,16 @@ const openNewModal = () => {
 const openEditModal = (credit: Credit) => {
   isEditing.value = true
   editingCredit.value = credit
+  creditError.value = ''
+  creditSuccess.value = ''
   form.value = {
     nombre: credit.nombre,
     monto: credit.monto,
     interes: credit.interes,
     abonado: credit.abonado,
     fechaInicio: credit.fechaInicio,
-    fechaFin: credit.fechaFin
+    fechaFin: credit.fechaFin,
+    origenAccountId: null
   }
   showModal.value = true
 }
@@ -89,37 +110,89 @@ const openPaymentsModal = (credit: Credit) => {
   newPayment.value = {
     monto: 0,
     fecha: new Date().toISOString().split('T')[0] ?? '',
-    nota: ''
+    nota: '',
+    origenAccountId: null
   }
+  paymentError.value = ''
+  paymentSuccess.value = ''
   showPaymentsModal.value = true
 }
 
 const saveCredit = () => {
+  creditError.value = ''
+  creditSuccess.value = ''
+  
   if (isEditing.value && editingCredit.value) {
     store.updateCredit(editingCredit.value.id, form.value)
+    showModal.value = false
   } else {
-    store.addCredit(form.value)
+    // Nuevo crédito requiere cuenta de origen
+    if (!form.value.origenAccountId) {
+      creditError.value = 'Seleccione la cuenta de origen del préstamo (RN-04)'
+      return
+    }
+    
+    const result = store.addCredit(
+      {
+        nombre: form.value.nombre,
+        monto: form.value.monto,
+        interes: form.value.interes,
+        abonado: form.value.abonado,
+        fechaInicio: form.value.fechaInicio,
+        fechaFin: form.value.fechaFin
+      },
+      form.value.origenAccountId
+    )
+    
+    if (result.success) {
+      creditSuccess.value = result.message
+      setTimeout(() => {
+        showModal.value = false
+      }, 1000)
+    } else {
+      creditError.value = result.message
+    }
   }
-  showModal.value = false
 }
 
 const addPayment = () => {
-  if (!selectedCredit.value || newPayment.value.monto <= 0) return
+  paymentError.value = ''
+  paymentSuccess.value = ''
   
-  store.addPayment(selectedCredit.value.id, {
-    monto: Math.min(newPayment.value.monto, maxPaymentAmount.value),
-    fecha: newPayment.value.fecha,
-    nota: newPayment.value.nota
-  })
+  if (!selectedCredit.value || newPayment.value.monto <= 0) {
+    paymentError.value = 'Ingrese un monto válido'
+    return
+  }
   
-  // Refresh selectedCredit reference
-  selectedCredit.value = store.credits.find(c => c.id === selectedCredit.value?.id) ?? null
+  if (!newPayment.value.origenAccountId) {
+    paymentError.value = 'Seleccione la cuenta donde se recibe el pago (RN-04)'
+    return
+  }
   
-  // Reset form
-  newPayment.value = {
-    monto: 0,
-    fecha: new Date().toISOString().split('T')[0] ?? '',
-    nota: ''
+  const result = store.addPayment(
+    selectedCredit.value.id, 
+    {
+      monto: Math.min(newPayment.value.monto, maxPaymentAmount.value),
+      fecha: newPayment.value.fecha,
+      nota: newPayment.value.nota
+    },
+    newPayment.value.origenAccountId
+  )
+  
+  if (result.success) {
+    paymentSuccess.value = result.message
+    // Refresh selectedCredit reference
+    selectedCredit.value = store.credits.find(c => c.id === selectedCredit.value?.id) ?? null
+    
+    // Reset form
+    newPayment.value = {
+      monto: 0,
+      fecha: new Date().toISOString().split('T')[0] ?? '',
+      nota: '',
+      origenAccountId: null
+    }
+  } else {
+    paymentError.value = result.message
   }
 }
 
@@ -189,8 +262,14 @@ const deleteCredit = (id: number) => {
                 </button>
                 <button 
                   @click="openEditModal(credit)"
-                  class="p-2 text-primary hover:bg-primary/10 rounded-lg transition"
-                  title="Editar"
+                  :disabled="credit.estado !== 'aprobado'"
+                  :class="[
+                    'p-2 rounded-lg transition',
+                    credit.estado === 'aprobado'
+                      ? 'text-primary hover:bg-primary/10'
+                      : 'text-gray-300 cursor-not-allowed'
+                  ]"
+                  :title="credit.estado === 'aprobado' ? 'Editar' : 'Solo se puede editar un crédito en estado aprobado'"
                 >
                   <i class="pi pi-pencil"></i>
                 </button>
@@ -222,6 +301,9 @@ const deleteCredit = (id: number) => {
       class="w-full max-w-lg"
     >
       <div class="space-y-4 p-2">
+        <Message v-if="creditError" severity="error" :closable="false">{{ creditError }}</Message>
+        <Message v-if="creditSuccess" severity="success" :closable="false">{{ creditSuccess }}</Message>
+        
         <div>
           <label class="block text-sm font-medium text-ink mb-1">Nombre</label>
           <InputText v-model="form.nombre" class="w-full" placeholder="Nombre del cliente" />
@@ -236,10 +318,21 @@ const deleteCredit = (id: number) => {
             <InputNumber v-model="form.interes" suffix="%" class="w-full" />
           </div>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-ink mb-1">Abonado</label>
-          <InputNumber v-model="form.abonado" mode="currency" currency="MXN" locale="es-MX" class="w-full" />
+        
+        <!-- RN-04: Cuenta de origen (solo para nuevo crédito) -->
+        <div v-if="!isEditing">
+          <label class="block text-sm font-medium text-ink mb-1">Cuenta de origen (RN-04)</label>
+          <Select
+            v-model="form.origenAccountId"
+            :options="cashAccounts"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccionar Caja o Banco"
+            class="w-full"
+          />
+          <p class="text-xs text-gray-500 mt-1">El dinero del préstamo saldrá de esta cuenta</p>
         </div>
+        
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-ink mb-1">Fecha Inicio</label>
@@ -303,7 +396,11 @@ const deleteCredit = (id: number) => {
         <!-- Add Payment Form -->
         <div v-if="selectedCredit.estado !== 'completado'" class="mb-4 p-4 border border-dashed border-gray-300 rounded-lg">
           <h3 class="text-sm font-semibold text-ink mb-3">Agregar Nuevo Abono</h3>
-          <div class="grid grid-cols-3 gap-3">
+          
+          <Message v-if="paymentError" severity="error" :closable="false" class="mb-3">{{ paymentError }}</Message>
+          <Message v-if="paymentSuccess" severity="success" :closable="false" class="mb-3">{{ paymentSuccess }}</Message>
+          
+          <div class="grid grid-cols-2 gap-3 mb-3">
             <div>
               <label class="block text-xs text-gray-500 mb-1">Monto</label>
               <InputNumber 
@@ -316,6 +413,19 @@ const deleteCredit = (id: number) => {
               />
             </div>
             <div>
+              <label class="block text-xs text-gray-500 mb-1">Cuenta destino (RN-04)</label>
+              <Select
+                v-model="newPayment.origenAccountId"
+                :options="cashAccounts"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Caja o Banco"
+                class="w-full"
+              />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
               <label class="block text-xs text-gray-500 mb-1">Fecha</label>
               <InputText v-model="newPayment.fecha" type="date" class="w-full" />
             </div>
@@ -327,10 +437,10 @@ const deleteCredit = (id: number) => {
           <div class="flex justify-end mt-3">
             <button 
               @click="addPayment" 
-              :disabled="newPayment.monto <= 0"
+              :disabled="newPayment.monto <= 0 || !newPayment.origenAccountId"
               :class="[
                 'flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition',
-                newPayment.monto > 0 
+                newPayment.monto > 0 && newPayment.origenAccountId
                   ? 'bg-green-600 hover:bg-green-700 text-white' 
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               ]"
