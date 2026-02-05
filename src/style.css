@@ -1,0 +1,151 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Roboto', 'Segoe UI', Helvetica, Arial, sans-serif;
+  color: #0b3145;
+  background-color: #f4f6f8;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  body {
+    @apply min-h-screen bg-cloud text-ink antialiased;
+  }
+
+  #app {
+    @apply min-h-screen;
+  }
+}
+
+@layer components {
+  .card-surface {
+    @apply rounded-3xl border border-white/60 bg-white shadow-card;
+  }
+
+  .form-label {
+    @apply text-xs font-semibold uppercase tracking-[0.3em] text-ink/50;
+  }
+
+  .form-input {
+    @apply mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-ink placeholder:text-ink/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20;
+  }
+
+  .primary-btn {
+    @apply inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90;
+  }
+
+  .secondary-btn {
+    @apply inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-ink/70 transition hover:border-primary/40 hover:text-primary;
+  }
+
+  .mobile-menu {
+    @apply rounded-3xl border border-slate-200 bg-white p-4 shadow-card;
+  }
+
+  .mobile-link {
+    @apply inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-ink/70 transition hover:border-primary/40 hover:text-primary;
+  }
+
+  .sidebar-card {
+    @apply sticky top-10 hidden h-fit min-w-[160px] flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-card lg:flex;
+  }
+
+  .menu-label {
+    @apply text-xs font-semibold uppercase tracking-[0.35em] text-ink/50;
+  }
+
+  .menu-link {
+    @apply flex items-center gap-2 text-sm font-medium text-ink/60 transition hover:text-primary;
+  }
+
+  .section-card {
+    @apply rounded-3xl border border-slate-200 bg-white p-6 shadow-card;
+  }
+
+  .section-header {
+    @apply flex flex-col gap-4 text-center md:flex-row md:items-center md:justify-between md:text-left;
+  }
+
+  .section-eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.35em] text-ink/45;
+  }
+
+  .section-title {
+    @apply text-2xl font-semibold text-primary;
+  }
+
+  .section-copy {
+    @apply mt-2 text-sm text-ink/65;
+  }
+
+  .form-grid {
+    @apply mt-6 grid gap-4 md:grid-cols-2;
+  }
+
+  .form-actions {
+    @apply md:col-span-2 flex justify-end gap-3;
+  }
+
+  .pill {
+    @apply inline-flex items-center rounded-full bg-primary/10 px-4 py-1 text-xs font-semibold text-primary;
+  }
+
+  .summary-card {
+    @apply rounded-2xl border border-slate-100 bg-slate-50/60 p-4 text-left;
+  }
+
+  .summary-code {
+    @apply text-xs font-semibold uppercase tracking-[0.35em] text-ink/50;
+  }
+
+  .summary-label {
+    @apply text-sm font-medium text-ink;
+  }
+
+  .summary-balance {
+    @apply text-2xl font-semibold text-primary;
+  }
+
+  .summary-detail {
+    @apply text-xs text-ink/60;
+  }
+
+  .summary-tag {
+    @apply mt-3 inline-flex rounded-full bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary shadow-inner;
+  }
+
+  .table-shell {
+    @apply mt-6 overflow-x-auto rounded-2xl border border-slate-200;
+  }
+
+  .table-grid {
+    @apply min-w-full border-collapse text-sm;
+  }
+
+  .table-grid thead {
+    @apply bg-slate-50 text-xs font-semibold uppercase tracking-wide text-ink/50;
+  }
+
+  .table-grid th,
+  .table-grid td {
+    @apply px-4 py-3 text-left align-middle;
+  }
+
+  .table-grid tbody tr {
+    @apply border-t border-slate-100;
+  }
+
+  .table-grid tbody tr:nth-child(odd) {
+    @apply bg-white;
+  }
+
+  .table-grid tbody tr:nth-child(even) {
+    @apply bg-slate-50/40;
+  }
+}
