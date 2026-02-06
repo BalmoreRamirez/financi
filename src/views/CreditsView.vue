@@ -6,8 +6,13 @@ import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import Message from 'primevue/message'
+import Paginator from 'primevue/paginator'
 
 const store = useFinanceStore()
+
+// Paginación
+const first = ref(0)
+const rows = ref(10)
 
 const showModal = ref(false)
 const showPaymentsModal = ref(false)
@@ -42,6 +47,18 @@ const cashAccounts = computed(() =>
     .filter(a => a.nombre === 'Caja' || a.nombre === 'Banco')
     .map(a => ({ label: `${a.nombre} (${formatCurrency(a.saldo)})`, value: a.id }))
 )
+
+// Créditos paginados
+const paginatedCredits = computed(() => {
+  const start = first.value
+  const end = start + rows.value
+  return store.credits.slice(start, end)
+})
+
+const onPageChange = (event: { first: number; rows: number }) => {
+  first.value = event.first
+  rows.value = event.rows
+}
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value)
@@ -237,7 +254,7 @@ const deleteCredit = (id: number) => {
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
-          <tr v-for="credit in store.credits" :key="credit.id" class="hover:bg-cloud">
+          <tr v-for="credit in paginatedCredits" :key="credit.id" class="hover:bg-cloud">
             <td class="px-4 py-3 text-sm text-ink font-medium">{{ credit.nombre }}</td>
             <td class="px-4 py-3 text-center">
               <span :class="['px-2 py-1 rounded-full text-xs font-medium', getStatusClass(credit.estado)]">
@@ -291,6 +308,17 @@ const deleteCredit = (id: number) => {
           </tr>
         </tbody>
       </table>
+      
+      <!-- Paginación -->
+      <Paginator
+        v-if="store.credits.length > rows"
+        :first="first"
+        :rows="rows"
+        :totalRecords="store.credits.length"
+        :rowsPerPageOptions="[10, 20, 50]"
+        @page="onPageChange"
+        class="border-t border-gray-100"
+      />
     </div>
 
     <!-- Modal -->

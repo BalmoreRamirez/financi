@@ -7,8 +7,13 @@ import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import Message from 'primevue/message'
+import Paginator from 'primevue/paginator'
 
 const store = useFinanceStore()
+
+// Paginación
+const first = ref(0)
+const rows = ref(10)
 
 // Modal state
 const showModal = ref(false)
@@ -45,6 +50,18 @@ const accountTypeOrder: Record<AccountType, number> = {
 const sortedAccounts = computed(() => 
   [...store.accounts].sort((a, b) => accountTypeOrder[a.tipo] - accountTypeOrder[b.tipo])
 )
+
+// Cuentas paginadas
+const paginatedAccounts = computed(() => {
+  const start = first.value
+  const end = start + rows.value
+  return sortedAccounts.value.slice(start, end)
+})
+
+const onPageChange = (event: { first: number; rows: number }) => {
+  first.value = event.first
+  rows.value = event.rows
+}
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value)
@@ -164,7 +181,7 @@ const deleteAccount = (id: number) => {
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
-          <tr v-for="account in sortedAccounts" :key="account.id" class="hover:bg-cloud">
+          <tr v-for="account in paginatedAccounts" :key="account.id" class="hover:bg-cloud">
             <td class="px-4 py-3 text-sm text-ink font-medium">
               <div class="flex items-center gap-2">
                 <div :class="[getAccountColor(account.tipo), 'w-8 h-8 rounded-lg flex items-center justify-center']">
@@ -205,6 +222,17 @@ const deleteAccount = (id: number) => {
           </tr>
         </tbody>
       </table>
+      
+      <!-- Paginación -->
+      <Paginator
+        v-if="sortedAccounts.length > rows"
+        :first="first"
+        :rows="rows"
+        :totalRecords="sortedAccounts.length"
+        :rowsPerPageOptions="[10, 20, 50]"
+        @page="onPageChange"
+        class="border-t border-gray-100"
+      />
     </div>
 
     <!-- Create/Edit Account Modal -->

@@ -7,8 +7,13 @@ import InputNumber from 'primevue/inputnumber'
 import Textarea from 'primevue/textarea'
 import Select from 'primevue/select'
 import Message from 'primevue/message'
+import Paginator from 'primevue/paginator'
 
 const store = useFinanceStore()
+
+// Paginación
+const first = ref(0)
+const rows = ref(10)
 
 const showModal = ref(false)
 const showSellModal = ref(false)
@@ -36,6 +41,18 @@ const cashAccounts = computed(() =>
     .filter(a => a.nombre === 'Caja' || a.nombre === 'Banco')
     .map(a => ({ label: `${a.nombre} (${formatCurrency(a.saldo)})`, value: a.id }))
 )
+
+// Inversiones paginadas
+const paginatedInvestments = computed(() => {
+  const start = first.value
+  const end = start + rows.value
+  return store.investments.slice(start, end)
+})
+
+const onPageChange = (event: { first: number; rows: number }) => {
+  first.value = event.first
+  rows.value = event.rows
+}
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value)
@@ -185,7 +202,7 @@ const deleteInvestment = (id: number) => {
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
-          <tr v-for="investment in store.investments" :key="investment.id" class="hover:bg-cloud">
+          <tr v-for="investment in paginatedInvestments" :key="investment.id" class="hover:bg-cloud">
             <td class="px-4 py-3 text-sm text-ink font-medium">{{ investment.nombre }}</td>
             <td class="px-4 py-3 text-sm text-gray-600">{{ investment.descripcion }}</td>
             <td class="px-4 py-3 text-sm text-ink text-right">{{ formatCurrency(investment.costo) }}</td>
@@ -235,6 +252,17 @@ const deleteInvestment = (id: number) => {
           </tr>
         </tbody>
       </table>
+      
+      <!-- Paginación -->
+      <Paginator
+        v-if="store.investments.length > rows"
+        :first="first"
+        :rows="rows"
+        :totalRecords="store.investments.length"
+        :rowsPerPageOptions="[10, 20, 50]"
+        @page="onPageChange"
+        class="border-t border-gray-100"
+      />
     </div>
 
     <!-- Create/Edit Modal -->
