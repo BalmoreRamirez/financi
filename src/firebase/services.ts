@@ -129,6 +129,63 @@ export const addTransactionToFirestore = async (transaction: Omit<Transaction, '
   return docRef.id
 }
 
+// ============ INITIALIZE DEFAULT ACCOUNTS ============
+// Cuentas contables base para operar en producción
+export const getDefaultAccounts = (): Omit<LedgerAccount, 'id' | 'firestoreId'>[] => {
+  const now = new Date().toISOString()
+  return [
+    // Cuentas de Activo
+    { nombre: 'Caja', tipo: 'activo' as const, saldo: 1000, createdAt: now },
+    { nombre: 'Banco', tipo: 'activo' as const, saldo: 0, createdAt: now },
+    { nombre: 'Préstamos por Cobrar', tipo: 'activo' as const, saldo: 0, createdAt: now },
+    { nombre: 'Inventario Inversiones', tipo: 'activo' as const, saldo: 0, createdAt: now },
+    
+    // Cuentas de Pasivo
+    { nombre: 'Cuentas por Pagar', tipo: 'pasivo' as const, saldo: 0, createdAt: now },
+    { nombre: 'Préstamos Bancarios', tipo: 'pasivo' as const, saldo: 0, createdAt: now },
+    
+    // Cuentas de Ingreso
+    { nombre: 'Intereses Ganados', tipo: 'ingreso' as const, saldo: 0, createdAt: now },
+    { nombre: 'Ganancias por Inversiones', tipo: 'ingreso' as const, saldo: 0, createdAt: now },
+    { nombre: 'Otros Ingresos', tipo: 'ingreso' as const, saldo: 0, createdAt: now },
+    
+    // Cuentas de Gasto
+    { nombre: 'Gastos Operativos', tipo: 'gasto' as const, saldo: 0, createdAt: now },
+    { nombre: 'Gastos Administrativos', tipo: 'gasto' as const, saldo: 0, createdAt: now },
+    { nombre: 'Gastos Financieros', tipo: 'gasto' as const, saldo: 0, createdAt: now },
+    
+    // Cuentas de Capital
+    { nombre: 'Capital Social', tipo: 'capital' as const, saldo: 1000, createdAt: now },
+    { nombre: 'Utilidades Retenidas', tipo: 'capital' as const, saldo: 0, createdAt: now }
+  ]
+}
+
+export const initializeDefaultAccounts = async (): Promise<boolean> => {
+  try {
+    // Verificar si ya existen cuentas
+    const accountsSnapshot = await getDocs(accountsCollection)
+    
+    if (accountsSnapshot.empty) {
+      console.log('Inicializando cuentas contables por defecto...')
+      
+      const defaultAccounts = getDefaultAccounts()
+      
+      for (const account of defaultAccounts) {
+        await addDoc(accountsCollection, account)
+      }
+      
+      console.log('Cuentas contables inicializadas correctamente!')
+      return true
+    }
+    
+    console.log('Las cuentas ya existen, no se requiere inicialización.')
+    return false
+  } catch (error) {
+    console.error('Error al inicializar cuentas:', error)
+    throw error
+  }
+}
+
 // ============ INITIALIZE DATA ============
 export const initializeFirestoreData = async (
   accounts: LedgerAccount[],

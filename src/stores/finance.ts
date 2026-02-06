@@ -14,7 +14,8 @@ import {
   addAccountToFirestore,
   updateAccountInFirestore,
   deleteAccountFromFirestore,
-  addTransactionToFirestore
+  addTransactionToFirestore,
+  initializeDefaultAccounts
 } from '../firebase/services'
 
 export interface Payment {
@@ -125,6 +126,9 @@ export const useFinanceStore = defineStore('finance', () => {
     try {
       isLoading.value = true
       syncError.value = null
+
+      // Inicializar cuentas por defecto si no existen
+      await initializeDefaultAccounts()
 
       // Subscribe to real-time updates from Firebase
       unsubscribeCredits = subscribeToCredits((data) => {
