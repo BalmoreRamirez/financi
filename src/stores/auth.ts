@@ -18,6 +18,12 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const loginError = ref<string | null>(null)
   const isLoading = ref(true) // Para esperar a que Firebase verifique el estado
+  
+  // Promise que se resuelve cuando el estado de auth está listo
+  let authReadyResolve: (() => void) | null = null
+  const authReady = new Promise<void>((resolve) => {
+    authReadyResolve = resolve
+  })
 
   const isAuthenticated = computed(() => user.value?.isAuthenticated ?? false)
 
@@ -34,8 +40,17 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = null
       }
       isLoading.value = false
+      
+      // Resolver la promesa cuando el auth esté listo
+      if (authReadyResolve) {
+        authReadyResolve()
+        authReadyResolve = null
+      }
     })
   }
+
+  // Función para esperar a que el auth esté listo
+  const waitForAuthReady = () => authReady
 
   const login = async (email: string, password: string): Promise<boolean> => {
     loginError.value = null
@@ -88,6 +103,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     isAuthenticated,
     login,
-    logout
+    logout,
+    waitForAuthReady
   }
 })

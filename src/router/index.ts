@@ -57,8 +57,11 @@ const router = createRouter({
 })
 
 // Navigation guard para proteger rutas
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
+  
+  // Esperar a que Firebase verifique el estado de autenticación
+  await authStore.waitForAuthReady()
   
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     // Redirigir a login si no está autenticado
