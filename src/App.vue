@@ -17,15 +17,23 @@ const menuItems = [
   { name: 'Cuentas', path: '/accounts', icon: 'pi-wallet' }
 ]
 
-const handleLogout = () => {
-  authStore.logout()
+const handleLogout = async () => {
+  await authStore.logout()
   router.push('/login')
 }
 </script>
 
 <template>
+  <!-- Loading State mientras Firebase verifica autenticación -->
+  <div v-if="authStore.isLoading" class="min-h-screen bg-cloud flex items-center justify-center">
+    <div class="text-center">
+      <i class="pi pi-spinner pi-spin text-4xl text-primary mb-4"></i>
+      <p class="text-gray-500">Cargando...</p>
+    </div>
+  </div>
+
   <!-- Login View (sin sidebar) -->
-  <div v-if="!authStore.isAuthenticated">
+  <div v-else-if="!authStore.isAuthenticated">
     <RouterView />
   </div>
 
@@ -73,7 +81,7 @@ const handleLogout = () => {
         <!-- User info -->
         <div v-if="!sidebarCollapsed" class="flex items-center gap-2 px-3 py-2 text-gray-300">
           <i class="pi pi-user"></i>
-          <span class="text-sm">{{ authStore.user?.username }}</span>
+          <span class="text-sm truncate">{{ authStore.user?.email }}</span>
         </div>
         
         <!-- Logout button -->

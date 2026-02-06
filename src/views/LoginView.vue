@@ -9,14 +9,14 @@ import Message from 'primevue/message'
 const router = useRouter()
 const authStore = useAuthStore()
 
-const username = ref('')
+const email = ref('')
 const password = ref('')
 const isLoading = ref(false)
 
 const handleLogin = async () => {
   isLoading.value = true
   
-  const success = authStore.login(username.value, password.value)
+  const success = await authStore.login(email.value, password.value)
   
   if (success) {
     router.push('/')
@@ -52,12 +52,13 @@ const handleKeyPress = (event: KeyboardEvent) => {
       <!-- Login Form -->
       <form @submit.prevent="handleLogin" class="space-y-5">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Usuario</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico</label>
           <div class="relative">
-            <i class="pi pi-user absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <i class="pi pi-envelope absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
             <InputText 
-              v-model="username"
-              placeholder="Ingrese su usuario"
+              v-model="email"
+              type="email"
+              placeholder="admin@financi.com"
               class="w-full pl-10"
               @keypress="handleKeyPress"
             />
@@ -82,7 +83,7 @@ const handleKeyPress = (event: KeyboardEvent) => {
 
         <button
           type="submit"
-          :disabled="isLoading || !username || !password"
+          :disabled="isLoading || !email || !password"
           class="w-full py-3 bg-primary hover:bg-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition flex items-center justify-center gap-2"
         >
           <i v-if="isLoading" class="pi pi-spinner pi-spin"></i>
