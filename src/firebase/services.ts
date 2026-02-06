@@ -134,29 +134,24 @@ export const addTransactionToFirestore = async (transaction: Omit<Transaction, '
 export const getDefaultAccounts = (): Omit<LedgerAccount, 'id' | 'firestoreId'>[] => {
   const now = new Date().toISOString()
   return [
-    // Cuentas de Activo
-    { nombre: 'Caja', tipo: 'activo' as const, saldo: 1000, createdAt: now },
-    { nombre: 'Banco', tipo: 'activo' as const, saldo: 0, createdAt: now },
-    { nombre: 'Préstamos por Cobrar', tipo: 'activo' as const, saldo: 0, createdAt: now },
-    { nombre: 'Inventario Inversiones', tipo: 'activo' as const, saldo: 0, createdAt: now },
-    
-    // Cuentas de Pasivo
-    { nombre: 'Cuentas por Pagar', tipo: 'pasivo' as const, saldo: 0, createdAt: now },
-    { nombre: 'Préstamos Bancarios', tipo: 'pasivo' as const, saldo: 0, createdAt: now },
+    // Cuentas de Capital
+    { nombre: 'Capital', tipo: 'capital' as const, saldo: 1000, createdAt: now },
     
     // Cuentas de Ingreso
     { nombre: 'Intereses Ganados', tipo: 'ingreso' as const, saldo: 0, createdAt: now },
-    { nombre: 'Ganancias por Inversiones', tipo: 'ingreso' as const, saldo: 0, createdAt: now },
-    { nombre: 'Otros Ingresos', tipo: 'ingreso' as const, saldo: 0, createdAt: now },
+    { nombre: 'Ganancias por Inversión', tipo: 'ingreso' as const, saldo: 0, createdAt: now },
+    
+    // Cuentas de Activo
+    { nombre: 'Préstamos por Cobrar', tipo: 'activo' as const, saldo: 400, createdAt: now },
+    { nombre: 'Caja', tipo: 'activo' as const, saldo: 400, createdAt: now },
+    { nombre: 'Banco', tipo: 'activo' as const, saldo: 0, createdAt: now },
+    { nombre: 'Inventario Inversiones', tipo: 'activo' as const, saldo: 200, createdAt: now },
     
     // Cuentas de Gasto
     { nombre: 'Gastos Operativos', tipo: 'gasto' as const, saldo: 0, createdAt: now },
-    { nombre: 'Gastos Administrativos', tipo: 'gasto' as const, saldo: 0, createdAt: now },
-    { nombre: 'Gastos Financieros', tipo: 'gasto' as const, saldo: 0, createdAt: now },
     
-    // Cuentas de Capital
-    { nombre: 'Capital Social', tipo: 'capital' as const, saldo: 1000, createdAt: now },
-    { nombre: 'Utilidades Retenidas', tipo: 'capital' as const, saldo: 0, createdAt: now }
+    // Cuentas de Pasivo
+    { nombre: 'Cuentas por Pagar', tipo: 'pasivo' as const, saldo: 0, createdAt: now }
   ]
 }
 
