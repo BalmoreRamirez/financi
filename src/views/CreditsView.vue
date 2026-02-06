@@ -40,7 +40,7 @@ const newPayment = ref({
 const cashAccounts = computed(() => 
   store.accounts
     .filter(a => a.nombre === 'Caja' || a.nombre === 'Banco')
-    .map(a => ({ label: a.nombre, value: a.id }))
+    .map(a => ({ label: `${a.nombre} (${formatCurrency(a.saldo)})`, value: a.id }))
 )
 
 const formatCurrency = (value: number) => {

@@ -9,6 +9,8 @@ const menuItems = [
   { name: 'Dashboard', path: '/', icon: 'pi-home' },
   { name: 'Créditos', path: '/credits', icon: 'pi-money-bill' },
   { name: 'Inversiones', path: '/investments', icon: 'pi-chart-line' },
+  { name: 'Gastos', path: '/expenses', icon: 'pi-arrow-up' },
+  { name: 'Capital', path: '/capital', icon: 'pi-building-columns' },
   { name: 'Cuentas', path: '/accounts', icon: 'pi-wallet' }
 ]
 </script>

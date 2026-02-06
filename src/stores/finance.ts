@@ -68,6 +68,20 @@ export interface Transaction {
   createdAt: string // RF-16: Inmutabilidad - timestamp de creación
 }
 
+// Cierre contable mensual
+export interface AccountingClosure {
+  id: number
+  mes: number // 1-12
+  anio: number
+  fecha: string // Fecha en que se realizó el cierre
+  interesesGanados: number
+  gananciaInversiones: number
+  totalIngresos: number
+  totalGastos: number
+  utilidadNeta: number
+  transactionId: number // ID de la transacción de cierre
+}
+
 export const useFinanceStore = defineStore('finance', () => {
   // Credits - Datos iniciales: 2 créditos de 200 cada uno
   const credits = ref<Credit[]>([
@@ -133,13 +147,15 @@ export const useFinanceStore = defineStore('finance', () => {
     { id: 4, nombre: 'Caja', tipo: 'activo', saldo: 400, createdAt: '2026-02-01T00:00:00.000Z' },
     { id: 5, nombre: 'Banco', tipo: 'activo', saldo: 0, createdAt: '2026-02-01T00:00:00.000Z' },
     { id: 6, nombre: 'Gastos Operativos', tipo: 'gasto', saldo: 0, createdAt: '2026-02-01T00:00:00.000Z' },
-    { id: 7, nombre: 'Cuentas por Pagar', tipo: 'pasivo', saldo: 0, createdAt: '2026-02-01T00:00:00.000Z' },
     { id: 8, nombre: 'Inventario Inversiones', tipo: 'activo', saldo: 200, createdAt: '2026-02-01T00:00:00.000Z' },
     { id: 9, nombre: 'Ganancias por Inversión', tipo: 'ingreso', saldo: 0, createdAt: '2026-02-01T00:00:00.000Z' }
   ])
 
   // RF-16: Historial inalterable de transacciones
   const transactions = ref<Transaction[]>([])
+
+  // Registro de cierres contables mensuales
+  const accountingClosures = ref<AccountingClosure[]>([])
 
   // Account type labels for UI
   const accountTypeLabels: Record<AccountType, string> = {
@@ -731,6 +747,145 @@ export const useFinanceStore = defineStore('finance', () => {
     return result
   })
 
+  // Verificar si un mes ya fue cerrado
+  const isMonthClosed = (mes: number, anio: number): boolean => {
+    return accountingClosures.value.some(c => c.mes === mes && c.anio === anio)
+  }
+
+  // Obtener cierres ordenados por fecha (más recientes primero)
+  const sortedClosures = computed(() => 
+    [...accountingClosures.value].sort((a, b) => {
+      if (a.anio !== b.anio) return b.anio - a.anio
+      return b.mes - a.mes
+    })
+  )
+
+  // Realizar cierre contable mensual
+  // Flujo contable:
+  // 1. Debitar cuentas de Ingreso (para cerrarlas a 0)
+  // 2. Acreditar cuentas de Gasto (para cerrarlas a 0)
+  // 3. La diferencia (Utilidad) se acredita a Capital
+  const performMonthlyClosing = (
+    mes: number,
+    anio: number
+  ): { success: boolean; message: string; closure?: AccountingClosure } => {
+    
+    // Validar que el mes no haya sido cerrado
+    if (isMonthClosed(mes, anio)) {
+      return { success: false, message: `El mes ${mes}/${anio} ya fue cerrado contablemente` }
+    }
+
+    // Obtener cuentas
+    const capitalAccount = accounts.value.find(a => a.nombre === 'Capital')
+    const interesesAccount = accounts.value.find(a => a.nombre === 'Intereses Ganados')
+    const gananciasInvAccount = accounts.value.find(a => a.nombre === 'Ganancias por Inversión')
+    const gastosAccount = accounts.value.find(a => a.nombre === 'Gastos Operativos')
+
+    if (!capitalAccount) {
+      return { success: false, message: 'Cuenta de Capital no encontrada' }
+    }
+
+    // Calcular totales
+    const interesesGanados = interesesAccount?.saldo ?? 0
+    const gananciaInversiones = gananciasInvAccount?.saldo ?? 0
+    const totalIngresos = interesesGanados + gananciaInversiones
+    const totalGastos = gastosAccount?.saldo ?? 0
+    const utilidadNeta = totalIngresos - totalGastos
+
+    // Si no hay movimientos, no hay nada que cerrar
+    if (totalIngresos === 0 && totalGastos === 0) {
+      return { success: false, message: 'No hay ingresos ni gastos para cerrar en este periodo' }
+    }
+
+    // Construir detalles de la transacción de cierre
+    const detalles: TransactionDetail[] = []
+
+    // 1. Cerrar cuentas de Ingreso (Debitar para llevar a 0)
+    if (interesesAccount && interesesGanados > 0) {
+      detalles.push({
+        accountId: interesesAccount.id,
+        accountName: interesesAccount.nombre,
+        debe: interesesGanados,
+        haber: 0
+      })
+    }
+
+    if (gananciasInvAccount && gananciaInversiones > 0) {
+      detalles.push({
+        accountId: gananciasInvAccount.id,
+        accountName: gananciasInvAccount.nombre,
+        debe: gananciaInversiones,
+        haber: 0
+      })
+    }
+
+    // 2. Cerrar cuentas de Gasto (Acreditar para llevar a 0)
+    if (gastosAccount && totalGastos > 0) {
+      detalles.push({
+        accountId: gastosAccount.id,
+        accountName: gastosAccount.nombre,
+        debe: 0,
+        haber: totalGastos
+      })
+    }
+
+    // 3. Transferir utilidad neta a Capital
+    if (utilidadNeta > 0) {
+      // Utilidad: Acreditar Capital (aumenta)
+      detalles.push({
+        accountId: capitalAccount.id,
+        accountName: capitalAccount.nombre,
+        debe: 0,
+        haber: utilidadNeta
+      })
+    } else if (utilidadNeta < 0) {
+      // Pérdida: Debitar Capital (disminuye)
+      detalles.push({
+        accountId: capitalAccount.id,
+        accountName: capitalAccount.nombre,
+        debe: Math.abs(utilidadNeta),
+        haber: 0
+      })
+    }
+
+    // Fecha del último día del mes
+    const fechaCierre = new Date(anio, mes, 0).toISOString().split('T')[0] ?? ''
+    const nombreMes = new Date(anio, mes - 1).toLocaleDateString('es-MX', { month: 'long' })
+
+    // Crear transacción de cierre
+    const transactionResult = addTransaction({
+      fecha: fechaCierre,
+      descripcion: `Cierre contable ${nombreMes} ${anio} - Utilidad: ${utilidadNeta >= 0 ? '+' : ''}${utilidadNeta.toFixed(2)}`,
+      detalles
+    })
+
+    if (!transactionResult.success) {
+      return { success: false, message: transactionResult.message }
+    }
+
+    // Registrar el cierre
+    const closure: AccountingClosure = {
+      id: Date.now(),
+      mes,
+      anio,
+      fecha: new Date().toISOString(),
+      interesesGanados,
+      gananciaInversiones,
+      totalIngresos,
+      totalGastos,
+      utilidadNeta,
+      transactionId: transactionResult.transaction?.id ?? 0
+    }
+
+    accountingClosures.value.push(closure)
+
+    return { 
+      success: true, 
+      message: `Cierre de ${nombreMes} ${anio} completado. Utilidad transferida a Capital: $${utilidadNeta.toFixed(2)}`,
+      closure
+    }
+  }
+
   // Initialize balances
   updateAccountBalances()
 
@@ -739,8 +894,10 @@ export const useFinanceStore = defineStore('finance', () => {
     investments,
     accounts,
     transactions,
+    accountingClosures,
     accountTypeLabels,
     sortedTransactions,
+    sortedClosures,
     accountsByType,
     totalCredits,
     totalPending,
@@ -760,6 +917,8 @@ export const useFinanceStore = defineStore('finance', () => {
     updateAccount,
     deleteAccount,
     validateTransaction,
-    addTransaction
+    addTransaction,
+    isMonthClosed,
+    performMonthlyClosing
   }
 })
