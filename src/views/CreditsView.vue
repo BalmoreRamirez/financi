@@ -55,6 +55,12 @@ const paginatedCredits = computed(() => {
   return store.credits.slice(start, end)
 })
 
+// Totales de créditos
+const totalMonto = computed(() => store.credits.reduce((sum, c) => sum + c.monto, 0))
+const totalTotal = computed(() => store.credits.reduce((sum, c) => sum + c.montoTotal, 0))
+const totalAbonado = computed(() => store.credits.reduce((sum, c) => sum + c.abonado, 0))
+const totalResta = computed(() => store.credits.reduce((sum, c) => sum + c.resta, 0))
+
 const onPageChange = (event: { first: number; rows: number }) => {
   first.value = event.first
   rows.value = event.rows
@@ -308,7 +314,25 @@ const deleteCredit = (id: number) => {
           </tr>
         </tbody>
       </table>
-      
+      <!-- Totales -->
+      <div class="bg-cloud border-t border-gray-200 flex flex-wrap justify-end gap-8 p-4 text-sm font-semibold">
+        <div>
+          <span class="text-gray-500 mr-2">Total Monto:</span>
+          <span class="text-primary">{{ formatCurrency(totalMonto) }}</span>
+        </div>
+        <div>
+          <span class="text-gray-500 mr-2">Total Abonado:</span>
+          <span class="text-green-600">{{ formatCurrency(totalAbonado) }}</span>
+        </div>
+        <div>
+          <span class="text-gray-500 mr-2">Total Resta:</span>
+          <span class="text-amber-600">{{ formatCurrency(totalResta) }}</span>
+        </div>
+        <div>
+          <span class="text-gray-500 mr-2">Total General:</span>
+          <span class="text-ink">{{ formatCurrency(totalTotal) }}</span>
+        </div>
+      </div>
       <!-- Paginación -->
       <Paginator
         v-if="store.credits.length > rows"
