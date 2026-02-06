@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from './stores/auth'
 
 const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
 const sidebarCollapsed = ref(false)
 
 const menuItems = [
@@ -13,10 +16,21 @@ const menuItems = [
   { name: 'Capital', path: '/capital', icon: 'pi-building-columns' },
   { name: 'Cuentas', path: '/accounts', icon: 'pi-wallet' }
 ]
+
+const handleLogout = () => {
+  authStore.logout()
+  router.push('/login')
+}
 </script>
 
 <template>
-  <div class="flex min-h-screen bg-cloud">
+  <!-- Login View (sin sidebar) -->
+  <div v-if="!authStore.isAuthenticated">
+    <RouterView />
+  </div>
+
+  <!-- App Layout (con sidebar) -->
+  <div v-else class="flex min-h-screen bg-cloud">
     <!-- Sidebar -->
     <aside 
       :class="[
@@ -54,8 +68,24 @@ const menuItems = [
         </ul>
       </nav>
 
-      <!-- Collapse Button -->
-      <div class="p-4 border-t border-white/10">
+      <!-- User & Logout -->
+      <div class="p-4 border-t border-white/10 space-y-2">
+        <!-- User info -->
+        <div v-if="!sidebarCollapsed" class="flex items-center gap-2 px-3 py-2 text-gray-300">
+          <i class="pi pi-user"></i>
+          <span class="text-sm">{{ authStore.user?.username }}</span>
+        </div>
+        
+        <!-- Logout button -->
+        <button 
+          @click="handleLogout"
+          class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-gray-300 hover:bg-red-500/20 hover:text-red-400 transition-colors"
+        >
+          <i class="pi pi-sign-out"></i>
+          <span v-if="!sidebarCollapsed">Cerrar Sesión</span>
+        </button>
+
+        <!-- Collapse Button -->
         <button 
           @click="sidebarCollapsed = !sidebarCollapsed"
           class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-colors"

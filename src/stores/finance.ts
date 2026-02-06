@@ -1,5 +1,21 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import {
+  subscribeToCredits,
+  subscribeToInvestments,
+  subscribeToAccounts,
+  subscribeToTransactions,
+  addCreditToFirestore,
+  updateCreditInFirestore,
+  deleteCreditFromFirestore,
+  addInvestmentToFirestore,
+  updateInvestmentInFirestore,
+  deleteInvestmentFromFirestore,
+  addAccountToFirestore,
+  updateAccountInFirestore,
+  deleteAccountFromFirestore,
+  addTransactionToFirestore
+} from '../firebase/services'
 
 export interface Payment {
   id: number
@@ -13,6 +29,7 @@ export type CreditStatus = 'aprobado' | 'proceso' | 'completado'
 
 export interface Credit {
   id: number
+  firestoreId?: string  // Firebase document ID
   nombre: string
   monto: number
   interes: number
@@ -27,6 +44,7 @@ export interface Credit {
 
 export interface Investment {
   id: number
+  firestoreId?: string  // Firebase document ID
   nombre: string
   descripcion: string
   costo: number
@@ -43,6 +61,7 @@ export type AccountType = 'activo' | 'pasivo' | 'ingreso' | 'gasto' | 'capital'
 // RF-11: Cuentas contables dinámicas
 export interface LedgerAccount {
   id: number
+  firestoreId?: string  // Firebase document ID
   nombre: string
   tipo: AccountType
   saldo: number
@@ -60,6 +79,7 @@ export interface TransactionDetail {
 // RF-14, RF-15, RF-16: Transacción contable
 export interface Transaction {
   id: number
+  firestoreId?: string  // Firebase document ID
   fecha: string
   descripcion: string
   detalles: TransactionDetail[]
@@ -83,76 +103,65 @@ export interface AccountingClosure {
 }
 
 export const useFinanceStore = defineStore('finance', () => {
-  // Credits - Datos iniciales: 2 créditos de 200 cada uno
-  const credits = ref<Credit[]>([
-    {
-      id: 1,
-      nombre: 'Cliente A',
-      monto: 200,
-      interes: 10,
-      montoTotal: 220,
-      abonado: 0,
-      resta: 220,
-      fechaInicio: '2026-02-01',
-      fechaFin: '2026-08-01',
-      estado: 'aprobado',
-      abonos: []
-    },
-    {
-      id: 2,
-      nombre: 'Cliente B',
-      monto: 200,
-      interes: 10,
-      montoTotal: 220,
-      abonado: 0,
-      resta: 220,
-      fechaInicio: '2026-02-01',
-      fechaFin: '2026-08-01',
-      estado: 'aprobado',
-      abonos: []
-    }
-  ])
+  // Firebase sync state
+  const isLoading = ref(true)
+  const isInitialized = ref(false)
+  const syncError = ref<string | null>(null)
 
-  // Investments - RN-03: La ganancia no se realiza hasta que se venda
-  // Datos iniciales: 2 teléfonos de 100 con ganancia estimada de 10 cada uno
-  const investments = ref<Investment[]>([
-    {
-      id: 1,
-      nombre: 'Teléfono 1',
-      descripcion: 'Teléfono para reventa',
-      costo: 100,
-      gananciaEstimada: 10,
-      gananciaReal: 0,
-      total: 110,
-      vendida: false
-    },
-    {
-      id: 2,
-      nombre: 'Teléfono 2',
-      descripcion: 'Teléfono para reventa',
-      costo: 100,
-      gananciaEstimada: 10,
-      gananciaReal: 0,
-      total: 110,
-      vendida: false
-    }
-  ])
-
-  // RF-11: Ledger Accounts - Cuentas contables dinámicas
-  // Datos iniciales: Capital 1000, Caja 400 (1000 - 400 créditos - 200 inversiones), Préstamos por Cobrar 400, Inventario Inversiones 200
-  const accounts = ref<LedgerAccount[]>([
-    { id: 1, nombre: 'Capital', tipo: 'capital', saldo: 1000, createdAt: '2026-02-01T00:00:00.000Z' },
-    { id: 2, nombre: 'Intereses Ganados', tipo: 'ingreso', saldo: 0, createdAt: '2026-02-01T00:00:00.000Z' },
-    { id: 3, nombre: 'Préstamos por Cobrar', tipo: 'activo', saldo: 400, createdAt: '2026-02-01T00:00:00.000Z' },
-    { id: 4, nombre: 'Caja', tipo: 'activo', saldo: 400, createdAt: '2026-02-01T00:00:00.000Z' },
-    { id: 5, nombre: 'Banco', tipo: 'activo', saldo: 0, createdAt: '2026-02-01T00:00:00.000Z' },
-    { id: 6, nombre: 'Gastos Operativos', tipo: 'gasto', saldo: 0, createdAt: '2026-02-01T00:00:00.000Z' },
-    { id: 8, nombre: 'Inventario Inversiones', tipo: 'activo', saldo: 200, createdAt: '2026-02-01T00:00:00.000Z' },
-    { id: 9, nombre: 'Ganancias por Inversión', tipo: 'ingreso', saldo: 0, createdAt: '2026-02-01T00:00:00.000Z' }
-  ])
-
-  // RF-16: Historial inalterable de transacciones
+  // Reactive data (synced with Firebase - no static data)
+  const credits = ref<Credit[]>([])
+  const investments = ref<Investment[]>([])
+  const accounts = ref<LedgerAccount[]>([])
   const transactions = ref<Transaction[]>([])
+
+  // Firebase subscriptions
+  let unsubscribeCredits: (() => void) | null = null
+  let unsubscribeInvestments: (() => void) | null = null
+  let unsubscribeAccounts: (() => void) | null = null
+  let unsubscribeTransactions: (() => void) | null = null
+
+  // Initialize Firebase subscriptions (no static data initialization)
+  const initializeFirebase = async () => {
+    try {
+      isLoading.value = true
+      syncError.value = null
+
+      // Subscribe to real-time updates from Firebase
+      unsubscribeCredits = subscribeToCredits((data) => {
+        credits.value = data.map((c, index) => ({ ...c, id: c.id || index + 1 }))
+      })
+
+      unsubscribeInvestments = subscribeToInvestments((data) => {
+        investments.value = data.map((i, index) => ({ ...i, id: i.id || index + 1 }))
+      })
+
+      unsubscribeAccounts = subscribeToAccounts((data) => {
+        accounts.value = data.map((a, index) => ({ ...a, id: a.id || index + 1 }))
+        isLoading.value = false
+        isInitialized.value = true
+      })
+
+      unsubscribeTransactions = subscribeToTransactions((data) => {
+        transactions.value = data.map((t, index) => ({ ...t, id: t.id || index + 1 }))
+      })
+
+    } catch (error) {
+      console.error('Error initializing Firebase:', error)
+      syncError.value = 'Error al conectar con Firebase'
+      isLoading.value = false
+    }
+  }
+
+  // Cleanup subscriptions
+  const cleanup = () => {
+    unsubscribeCredits?.()
+    unsubscribeInvestments?.()
+    unsubscribeAccounts?.()
+    unsubscribeTransactions?.()
+  }
+
+  // Initialize on store creation
+  initializeFirebase()
 
   // Registro de cierres contables mensuales
   const accountingClosures = ref<AccountingClosure[]>([])
@@ -251,6 +260,15 @@ export const useFinanceStore = defineStore('finance', () => {
 
     credits.value.push(newCredit)
     updateAccountBalances()
+    
+    // Sync to Firebase
+    addCreditToFirestore(newCredit).then(firestoreId => {
+      const idx = credits.value.findIndex(c => c.id === newCredit.id)
+      if (idx !== -1 && credits.value[idx]) {
+        credits.value[idx].firestoreId = firestoreId
+      }
+    }).catch(err => console.error('Error syncing credit to Firebase:', err))
+    
     return { success: true, message: 'Crédito creado correctamente' }
   }
 
@@ -276,6 +294,12 @@ export const useFinanceStore = defineStore('finance', () => {
     updated.resta = updated.montoTotal - updated.abonado
     credits.value[index] = updated
     updateAccountBalances()
+    
+    // Sync to Firebase
+    if (existing.firestoreId) {
+      updateCreditInFirestore(existing.firestoreId, updated)
+        .catch(err => console.error('Error updating credit in Firebase:', err))
+    }
   }
 
   const deleteCredit = (id: number) => {
@@ -306,6 +330,12 @@ export const useFinanceStore = defineStore('finance', () => {
             }
           ]
         })
+      }
+      
+      // Sync delete to Firebase
+      if (credit.firestoreId) {
+        deleteCreditFromFirestore(credit.firestoreId)
+          .catch(err => console.error('Error deleting credit from Firebase:', err))
       }
       
       credits.value = credits.value.filter(c => c.id !== id)
@@ -405,6 +435,17 @@ export const useFinanceStore = defineStore('finance', () => {
     }
     
     updateAccountBalances()
+    
+    // Sync credit update to Firebase (payment added)
+    if (credit.firestoreId) {
+      updateCreditInFirestore(credit.firestoreId, {
+        abonos: credit.abonos,
+        abonado: credit.abonado,
+        resta: credit.resta,
+        estado: credit.estado
+      }).catch(err => console.error('Error syncing payment to Firebase:', err))
+    }
+    
     return { success: true, message: 'Pago registrado correctamente' }
   }
 
@@ -471,6 +512,15 @@ export const useFinanceStore = defineStore('finance', () => {
     }
 
     investments.value.push(newInvestment)
+    
+    // Sync to Firebase
+    addInvestmentToFirestore(newInvestment).then(firestoreId => {
+      const idx = investments.value.findIndex(i => i.id === newInvestment.id)
+      if (idx !== -1 && investments.value[idx]) {
+        investments.value[idx].firestoreId = firestoreId
+      }
+    }).catch(err => console.error('Error syncing investment to Firebase:', err))
+    
     return { success: true, message: 'Inversión creada correctamente' }
   }
 
@@ -495,6 +545,12 @@ export const useFinanceStore = defineStore('finance', () => {
     }
     updated.total = updated.costo + updated.gananciaEstimada
     investments.value[index] = updated
+    
+    // Sync to Firebase
+    if (existing.firestoreId) {
+      updateInvestmentInFirestore(existing.firestoreId, updated)
+        .catch(err => console.error('Error updating investment in Firebase:', err))
+    }
   }
 
   const deleteInvestment = (id: number) => {
@@ -524,6 +580,12 @@ export const useFinanceStore = defineStore('finance', () => {
             }
           ]
         })
+      }
+      
+      // Sync delete to Firebase
+      if (investment.firestoreId) {
+        deleteInvestmentFromFirestore(investment.firestoreId)
+          .catch(err => console.error('Error deleting investment from Firebase:', err))
       }
       
       investments.value = investments.value.filter(i => i.id !== id)
@@ -614,6 +676,15 @@ export const useFinanceStore = defineStore('finance', () => {
       return { success: false, message: transactionResult.message }
     }
 
+    // Sync to Firebase
+    if (investment.firestoreId) {
+      updateInvestmentInFirestore(investment.firestoreId, {
+        gananciaReal: investment.gananciaReal,
+        vendida: investment.vendida,
+        fechaVenta: investment.fechaVenta
+      }).catch(err => console.error('Error syncing sold investment to Firebase:', err))
+    }
+
     return { success: true, message: `Inversión vendida. Ganancia realizada: $${investment.gananciaReal}` }
   }
 
@@ -625,6 +696,15 @@ export const useFinanceStore = defineStore('finance', () => {
       createdAt: new Date().toISOString()
     }
     accounts.value.push(newAccount)
+    
+    // Sync to Firebase
+    addAccountToFirestore(newAccount).then(firestoreId => {
+      const idx = accounts.value.findIndex(a => a.id === newAccount.id)
+      if (idx !== -1 && accounts.value[idx]) {
+        accounts.value[idx].firestoreId = firestoreId
+      }
+    }).catch(err => console.error('Error syncing account to Firebase:', err))
+    
     return newAccount
   }
 
@@ -641,11 +721,19 @@ export const useFinanceStore = defineStore('finance', () => {
       tipo: data.tipo ?? existing.tipo,
       saldo: data.saldo ?? existing.saldo
     }
+    
+    // Sync to Firebase
+    if (existing.firestoreId) {
+      updateAccountInFirestore(existing.firestoreId, accounts.value[index])
+        .catch(err => console.error('Error updating account in Firebase:', err))
+    }
+    
     return true
   }
 
   // Eliminar cuenta contable (solo si no tiene transacciones asociadas)
   const deleteAccount = (id: number): { success: boolean; message: string } => {
+    const account = accounts.value.find(a => a.id === id)
     const hasTransactions = transactions.value.some(t => 
       t.detalles.some(d => d.accountId === id)
     )
@@ -655,6 +743,12 @@ export const useFinanceStore = defineStore('finance', () => {
         success: false, 
         message: 'No se puede eliminar una cuenta con transacciones asociadas' 
       }
+    }
+    
+    // Sync delete to Firebase
+    if (account?.firestoreId) {
+      deleteAccountFromFirestore(account.firestoreId)
+        .catch(err => console.error('Error deleting account from Firebase:', err))
     }
     
     accounts.value = accounts.value.filter(a => a.id !== id)
@@ -716,10 +810,21 @@ export const useFinanceStore = defineStore('finance', () => {
         } else {
           account.saldo += detalle.haber - detalle.debe
         }
+        
+        // Sync account balance to Firebase
+        if (account.firestoreId) {
+          updateAccountInFirestore(account.firestoreId, { saldo: account.saldo })
+            .catch(err => console.error('Error syncing account balance to Firebase:', err))
+        }
       }
     }
 
     transactions.value.push(newTransaction)
+    
+    // Sync transaction to Firebase
+    addTransactionToFirestore(newTransaction)
+      .catch(err => console.error('Error syncing transaction to Firebase:', err))
+    
     return { success: true, message: 'Transacción registrada correctamente', transaction: newTransaction }
   }
 
@@ -890,6 +995,12 @@ export const useFinanceStore = defineStore('finance', () => {
   updateAccountBalances()
 
   return {
+    // Firebase state
+    isLoading,
+    isInitialized,
+    syncError,
+    cleanup,
+    // Data
     credits,
     investments,
     accounts,
@@ -904,6 +1015,7 @@ export const useFinanceStore = defineStore('finance', () => {
     totalInvestments,
     totalGains,
     totalEstimatedGains,
+    // Actions
     addCredit,
     updateCredit,
     deleteCredit,
