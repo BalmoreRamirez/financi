@@ -67,6 +67,7 @@ export interface LedgerAccount {
   tipo: AccountType
   saldo: number
   createdAt: string
+  protegida?: boolean // Nueva propiedad: true si la cuenta es clave
 }
 
 // RF-15: Detalle de cuenta afectada en una transacción
@@ -697,10 +698,10 @@ export const useFinanceStore = defineStore('finance', () => {
     const newAccount: LedgerAccount = {
       ...account,
       id: Date.now(),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      protegida: account.protegida || false
     }
     accounts.value.push(newAccount)
-    
     // Sync to Firebase
     addAccountToFirestore(newAccount).then(firestoreId => {
       const idx = accounts.value.findIndex(a => a.id === newAccount.id)
@@ -708,7 +709,6 @@ export const useFinanceStore = defineStore('finance', () => {
         accounts.value[idx].firestoreId = firestoreId
       }
     }).catch(err => console.error('Error syncing account to Firebase:', err))
-    
     return newAccount
   }
 
@@ -718,43 +718,41 @@ export const useFinanceStore = defineStore('finance', () => {
     if (index === -1) return false
     const existing = accounts.value[index]
     if (!existing) return false
-    
+    if (existing.protegida) return false // Bloquear edición si es protegida
     accounts.value[index] = {
       ...existing,
       nombre: data.nombre ?? existing.nombre,
       tipo: data.tipo ?? existing.tipo,
       saldo: data.saldo ?? existing.saldo
     }
-    
     // Sync to Firebase
     if (existing.firestoreId) {
       updateAccountInFirestore(existing.firestoreId, accounts.value[index])
         .catch(err => console.error('Error updating account in Firebase:', err))
     }
-    
     return true
   }
 
   // Eliminar cuenta contable (solo si no tiene transacciones asociadas)
   const deleteAccount = (id: number): { success: boolean; message: string } => {
     const account = accounts.value.find(a => a.id === id)
+    if (account?.protegida) {
+      return { success: false, message: 'No se puede eliminar una cuenta protegida' }
+    }
     const hasTransactions = transactions.value.some(t => 
       t.detalles.some(d => d.accountId === id)
     )
-    
     if (hasTransactions) {
       return { 
         success: false, 
         message: 'No se puede eliminar una cuenta con transacciones asociadas' 
       }
     }
-    
     // Sync delete to Firebase
     if (account?.firestoreId) {
       deleteAccountFromFirestore(account.firestoreId)
         .catch(err => console.error('Error deleting account from Firebase:', err))
     }
-    
     accounts.value = accounts.value.filter(a => a.id !== id)
     return { success: true, message: 'Cuenta eliminada correctamente' }
   }

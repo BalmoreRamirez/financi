@@ -133,23 +133,20 @@ export const addTransactionToFirestore = async (transaction: Omit<Transaction, '
 // Cuentas contables base para operar en producción
 export const getDefaultAccounts = (): Omit<LedgerAccount, 'id' | 'firestoreId'>[] => {
   const now = new Date().toISOString()
+  // Marcar cuentas clave como protegidas
   return [
     // Cuentas de Capital
-    { nombre: 'Capital', tipo: 'capital' as const, saldo: 1000, createdAt: now },
-    
+    { nombre: 'Capital', tipo: 'capital' as const, saldo: 1000, createdAt: now, protegida: true },
     // Cuentas de Ingreso
-    { nombre: 'Intereses Ganados', tipo: 'ingreso' as const, saldo: 0, createdAt: now },
-    { nombre: 'Ganancias por Inversión', tipo: 'ingreso' as const, saldo: 0, createdAt: now },
-    
+    { nombre: 'Intereses Ganados', tipo: 'ingreso' as const, saldo: 0, createdAt: now, protegida: true },
+    { nombre: 'Ganancias por Inversión', tipo: 'ingreso' as const, saldo: 0, createdAt: now, protegida: true },
     // Cuentas de Activo
-    { nombre: 'Préstamos por Cobrar', tipo: 'activo' as const, saldo: 400, createdAt: now },
-    { nombre: 'Caja', tipo: 'activo' as const, saldo: 400, createdAt: now },
-    { nombre: 'Banco', tipo: 'activo' as const, saldo: 0, createdAt: now },
-    { nombre: 'Inventario Inversiones', tipo: 'activo' as const, saldo: 200, createdAt: now },
-    
+    { nombre: 'Préstamos por Cobrar', tipo: 'activo' as const, saldo: 400, createdAt: now, protegida: true },
+    { nombre: 'Caja', tipo: 'activo' as const, saldo: 400, createdAt: now, protegida: true },
+    { nombre: 'Banco', tipo: 'activo' as const, saldo: 0, createdAt: now, protegida: true },
+    { nombre: 'Inventario Inversiones', tipo: 'activo' as const, saldo: 200, createdAt: now, protegida: true },
     // Cuentas de Gasto
     { nombre: 'Gastos Operativos', tipo: 'gasto' as const, saldo: 0, createdAt: now },
-    
     // Cuentas de Pasivo
     { nombre: 'Cuentas por Pagar', tipo: 'pasivo' as const, saldo: 0, createdAt: now }
   ]

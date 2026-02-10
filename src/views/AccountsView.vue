@@ -207,13 +207,19 @@ const deleteAccount = (id: number) => {
               <div class="flex justify-center gap-2">
                 <button 
                   @click="openEditModal(account)"
-                  class="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200"
+                  class="p-2 rounded-lg bg-blue-100 "
+                  :class="account.protegida?'text-gray-300 cursor-not-allowed':'text-blue-600 hover:bg-blue-200'"
+                  :disabled="account.protegida"
+                  :title="account.protegida ? 'Cuenta protegida' : 'Editar'"
                 >
                   <i class="pi pi-pencil text-sm"></i>
                 </button>
                 <button 
                   @click="deleteAccount(account.id)"
-                  class="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200"
+                  class="p-2 rounded-lg bg-red-100 "
+                  :class="account.protegida?'text-gray-300 cursor-not-allowed':'text-red-600 hover:bg-red-200'"
+                  :disabled="account.protegida"
+                  :title="account.protegida ? 'Cuenta protegida' : 'Eliminar'"
                 >
                   <i class="pi pi-trash text-sm"></i>
                 </button>
