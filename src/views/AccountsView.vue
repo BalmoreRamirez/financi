@@ -25,6 +25,7 @@ const successMessage = ref('')
 // Form data
 const formData = ref({
   nombre: '',
+  descripcion: '',
   tipo: 'activo' as AccountType,
   saldo: 0
 })
@@ -103,17 +104,18 @@ const getAccountBadgeClass = (tipo: string) => {
 const openCreateModal = () => {
   isEditing.value = false
   editingId.value = null
-  formData.value = { nombre: '', tipo: 'activo', saldo: 0 }
+  formData.value = { nombre: '', descripcion: '', tipo: 'activo', saldo: 0 }
   errorMessage.value = ''
   successMessage.value = ''
   showModal.value = true
 }
 
-const openEditModal = (account: { id: number; nombre: string; tipo: AccountType; saldo: number }) => {
+const openEditModal = (account: { id: number; nombre: string; descripcion?: string; tipo: AccountType; saldo: number }) => {
   isEditing.value = true
   editingId.value = account.id
   formData.value = {
     nombre: account.nombre,
+    descripcion: account.descripcion || '',
     tipo: account.tipo,
     saldo: account.saldo
   }
@@ -171,10 +173,11 @@ const deleteAccount = (id: number) => {
 
     <!-- Summary Table -->
     <div class="bg-white rounded-xl shadow-card p-6 overflow-x-auto">
-      <table class="w-full min-w-[600px]">
+      <table class="w-full min-w-[800px]">
         <thead class="bg-cloud">
           <tr>
             <th class="px-4 py-3 text-left text-sm font-medium text-ink">Cuenta</th>
+            <th class="px-4 py-3 text-left text-sm font-medium text-ink">Descripción</th>
             <th class="px-4 py-3 text-center text-sm font-medium text-ink">Tipo</th>
             <th class="px-4 py-3 text-right text-sm font-medium text-ink">Saldo</th>
             <th class="px-4 py-3 text-center text-sm font-medium text-ink">Acciones</th>
@@ -190,6 +193,7 @@ const deleteAccount = (id: number) => {
                 {{ account.nombre }}
               </div>
             </td>
+            <td class="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">{{ account.descripcion }}</td>
             <td class="px-4 py-3 text-center">
               <span 
                 :class="[
@@ -252,12 +256,23 @@ const deleteAccount = (id: number) => {
         <Message v-if="errorMessage" severity="error" :closable="false">{{ errorMessage }}</Message>
         <Message v-if="successMessage" severity="success" :closable="false">{{ successMessage }}</Message>
 
+
         <div class="flex flex-col gap-2">
           <label for="nombre" class="font-medium text-ink">Nombre de la Cuenta</label>
           <InputText 
             id="nombre" 
             v-model="formData.nombre" 
             placeholder="Ej: Caja Chica, Banco, etc."
+            class="w-full"
+          />
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label for="descripcion" class="font-medium text-ink">Descripción de los fondos</label>
+          <InputText 
+            id="descripcion" 
+            v-model="formData.descripcion" 
+            placeholder="Describe brevemente el origen o uso de los fondos"
             class="w-full"
           />
         </div>
