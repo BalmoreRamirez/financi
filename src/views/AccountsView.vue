@@ -170,8 +170,8 @@ const deleteAccount = (id: number) => {
     </div>
 
     <!-- Summary Table -->
-    <div class="bg-white rounded-xl shadow-card p-6">
-      <table class="w-full">
+    <div class="bg-white rounded-xl shadow-card p-6 overflow-x-auto">
+      <table class="w-full min-w-[600px]">
         <thead class="bg-cloud">
           <tr>
             <th class="px-4 py-3 text-left text-sm font-medium text-ink">Cuenta</th>

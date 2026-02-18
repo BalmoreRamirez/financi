@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <rect width="48" height="48" rx="12" fill="#0b3145"/>
+  <g>
+    <circle cx="24" cy="24" r="16" fill="#1ec6b2"/>
+    <text x="24" y="29" text-anchor="middle" font-size="18" font-family="Segoe UI, Arial, sans-serif" fill="#fff" font-weight="bold">$</text>
+  </g>
+</svg>

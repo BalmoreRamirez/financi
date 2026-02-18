@@ -7,6 +7,27 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const sidebarCollapsed = ref(false)
+const sidebarOpen = ref(false) // Para drawer en móvil/tablet
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
+
+function updateWindowWidth() {
+  windowWidth.value = window.innerWidth
+}
+
+import { onMounted } from 'vue'
+if (typeof window !== 'undefined') {
+  onMounted(() => {
+    updateWindowWidth()
+    window.addEventListener('resize', updateWindowWidth)
+  })
+}
+
+import { onUnmounted } from 'vue'
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', updateWindowWidth)
+  }
+})
 
 const menuItems = [
   { name: 'Dashboard', path: '/', icon: 'pi-home' },
@@ -39,21 +60,39 @@ const handleLogout = async () => {
 
   <!-- App Layout (con sidebar) -->
   <div v-else class="flex min-h-screen bg-cloud">
-    <!-- Sidebar -->
-    <aside 
+    <!-- Topbar para móvil/tablet -->
+    <div class="flex items-center justify-between bg-ink text-white px-4 py-3 shadow z-20 w-full fixed top-0 left-0 md:hidden">
+      <button v-if="windowWidth <= 769" @click="sidebarOpen = true" class="p-2 focus:outline-none">
+        <i class="pi pi-bars text-2xl"></i>
+      </button>
+      <span class="font-bold text-lg">Financi</span>
+      <div></div>
+    </div>
+
+    <!-- Sidebar Desktop & Drawer Mobile -->
+    <aside
       :class="[
-        'bg-ink text-white transition-all duration-300 flex flex-col',
-        sidebarCollapsed ? 'w-16' : 'w-64'
+        'bg-ink text-white transition-all duration-300 flex flex-col z-30',
+        windowWidth <= 768 ? 'fixed top-0 left-0 h-full' : 'md:static md:relative md:h-auto min-h-screen',
+        sidebarCollapsed && windowWidth > 768 ? 'w-16' : 'w-64',
+        windowWidth <= 768 ? (sidebarOpen ? 'block translate-x-0' : 'hidden -translate-x-full') : 'md:block md:translate-x-0 md:transform-none',
+        windowWidth <= 768 ? 'shadow-lg' : 'md:shadow-none',
+        'transform',
+        'z-30'
       ]"
+      :style="windowWidth <= 768 ? { top: sidebarOpen ? '0' : '', left: sidebarOpen ? '0' : '' } : {}"
     >
-      <!-- Logo -->
-      <div class="p-4 border-b border-white/10">
-        <div class="flex items-center gap-3">
+      <!-- Logo y cerrar en móvil -->
+      <div class="p-4 border-b border-white/10 flex items-center justify-between">
+        <div class="flex items-center gap-3 cursor-pointer select-none" @click="windowWidth >= 768 ? sidebarCollapsed = !sidebarCollapsed : null">
           <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
             <i class="pi pi-dollar text-white text-xl"></i>
           </div>
           <span v-if="!sidebarCollapsed" class="text-xl font-bold">Financi</span>
         </div>
+        <button v-if="sidebarOpen && windowWidth < 768" @click="sidebarOpen = false" class="md:hidden p-2 ml-2">
+          <i class="pi pi-times text-2xl"></i>
+        </button>
       </div>
 
       <!-- Navigation -->
@@ -62,6 +101,7 @@ const handleLogout = async () => {
           <li v-for="item in menuItems" :key="item.path">
             <RouterLink 
               :to="item.path"
+              @click.native="sidebarOpen = false"
               :class="[
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
                 route.path === item.path 
@@ -83,29 +123,20 @@ const handleLogout = async () => {
           <i class="pi pi-user"></i>
           <span class="text-sm truncate">{{ authStore.user?.email }}</span>
         </div>
-        
         <!-- Logout button -->
         <button 
           @click="handleLogout"
-          class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-gray-300 hover:bg-red-500/20 hover:text-red-400 transition-colors"
+          class="w-full flex items-center justify-start gap-2 px-3 py-2 rounded-lg text-gray-300 hover:bg-red-500/20 hover:text-red-400 transition-colors"
         >
           <i class="pi pi-sign-out"></i>
           <span v-if="!sidebarCollapsed">Cerrar Sesión</span>
         </button>
-
-        <!-- Collapse Button -->
-        <button 
-          @click="sidebarCollapsed = !sidebarCollapsed"
-          class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
-        >
-          <i :class="['pi', sidebarCollapsed ? 'pi-angle-right' : 'pi-angle-left']"></i>
-          <span v-if="!sidebarCollapsed">Colapsar</span>
-        </button>
+        <!-- Botón de colapsar eliminado, ahora se usa el logo/nombre -->
       </div>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 overflow-auto">
+    <main class="flex-1 overflow-auto  pt-14 md:pt-0">
       <RouterView />
     </main>
   </div>

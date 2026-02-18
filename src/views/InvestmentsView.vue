@@ -170,6 +170,25 @@ const deleteInvestment = (id: number) => {
 
 <template>
   <div class="p-6">
+    <!-- Indicadores resumen de flujo de inversiones -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-xl shadow-card p-4 flex flex-col items-start">
+        <span class="text-xs text-gray-500 mb-1">Total Invertido</span>
+        <span class="text-lg font-bold text-primary">{{ formatCurrency(store.investments.reduce((sum, inv) => sum + inv.costo, 0)) }}</span>
+      </div>
+      <div class="bg-white rounded-xl shadow-card p-4 flex flex-col items-start">
+        <span class="text-xs text-gray-500 mb-1">Total Vendido</span>
+        <span class="text-lg font-bold text-green-600">{{ formatCurrency(store.investments.filter(inv => inv.vendida).reduce((sum, inv) => sum + inv.costo, 0)) }}</span>
+      </div>
+      <div class="bg-white rounded-xl shadow-card p-4 flex flex-col items-start">
+        <span class="text-xs text-gray-500 mb-1">Ganancia Estimada</span>
+        <span class="text-lg font-bold text-orange-500">{{ formatCurrency(store.totalEstimatedGains) }}</span>
+      </div>
+      <div class="bg-white rounded-xl shadow-card p-4 flex flex-col items-start">
+        <span class="text-xs text-gray-500 mb-1">Ganancia Realizada</span>
+        <span class="text-lg font-bold text-green-700">{{ formatCurrency(store.investments.filter(inv => inv.vendida).reduce((sum, inv) => sum + (inv.gananciaReal || 0), 0)) }}</span>
+      </div>
+    </div>
     <div class="flex items-center justify-between mb-6">
       <div>
         <h1 class="text-2xl font-bold text-ink">Inversiones</h1>
@@ -188,8 +207,8 @@ const deleteInvestment = (id: number) => {
     </div>
 
     <!-- Investments Table -->
-    <div class="bg-white rounded-xl shadow-card overflow-hidden">
-      <table class="w-full">
+    <div class="bg-white rounded-xl shadow-card overflow-x-auto">
+      <table class="w-full min-w-[600px]">
         <thead class="bg-ink text-white">
           <tr>
             <th class="px-4 py-3 text-left text-sm font-medium">Nombre</th>
