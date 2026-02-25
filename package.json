@@ -11,6 +11,8 @@
   "dependencies": {
     "@primeuix/themes": "^2.0.3",
     "firebase": "^12.9.0",
+    "jspdf": "^4.2.0",
+    "jspdf-autotable": "^5.0.7",
     "pinia": "^3.0.4",
     "primeicons": "^7.0.0",
     "primevue": "^4.5.4",

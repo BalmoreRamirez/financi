@@ -8,6 +8,9 @@ import Select from 'primevue/select'
 import Message from 'primevue/message'
 import Paginator from 'primevue/paginator'
 
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+
 const store = useFinanceStore()
 
 // Paginación
@@ -227,12 +230,93 @@ const deleteCredit = (id: number) => {
     store.deleteCredit(id)
   }
 }
+
+// Exportar créditos aprobados y en proceso a PDF
+const exportCreditsPDF = () => {
+  const creditsToExport = store.credits.filter(c => c.estado === 'aprobado' || c.estado === 'proceso')
+  const doc = new jsPDF({ orientation: 'portrait' })
+  let y = 16
+  doc.setFontSize(18)
+  doc.text('Reporte Detallado de Créditos', 14, y)
+  y += 8
+  doc.setFontSize(12)
+  doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-MX')}`, 14, y)
+  y += 8
+  doc.setFontSize(12)
+  doc.text(`Total créditos: ${creditsToExport.length}`, 14, y)
+  y += 8
+  doc.text(`Estados incluidos: Aprobado, En Proceso`, 14, y)
+  y += 10
+
+  creditsToExport.forEach((credit, idx) => {
+    doc.setFontSize(14)
+    doc.setTextColor(40, 40, 120)
+    doc.text(`${idx + 1}. ${credit.nombre}`, 14, y)
+    y += 7
+    doc.setFontSize(11)
+    doc.setTextColor(0, 0, 0)
+    doc.text(`Estado: ${getStatusLabel(credit.estado)}`, 14, y)
+    doc.text(`Monto: ${formatCurrency(credit.monto)}`, 70, y)
+    doc.text(`Interés: ${credit.interes}%`, 120, y)
+    y += 6
+    doc.text(`Total: ${formatCurrency(credit.montoTotal)}`, 14, y)
+    doc.text(`Abonado: ${formatCurrency(credit.abonado)}`, 70, y)
+    doc.text(`Resta: ${formatCurrency(credit.resta)}`, 120, y)
+    y += 6
+    doc.text(`Fecha Inicio: ${credit.fechaInicio}`, 14, y)
+    doc.text(`Fecha Fin: ${credit.fechaFin || 'N/A'}`, 70, y)
+    y += 6
+
+    if (credit.estado === 'proceso' && credit.abonos && credit.abonos.length > 0) {
+      y += 4
+      doc.setFontSize(12)
+      doc.setTextColor(0, 120, 0)
+      doc.text('Abonos:', 14, y)
+      y += 4
+      doc.setFontSize(10)
+      doc.setTextColor(0, 0, 0)
+      const abonoTable = credit.abonos.map((abono, i) => [
+        `${i + 1}`,
+        abono.fecha,
+        formatCurrency(abono.monto),
+        abono.nota || ''
+      ])
+      autoTable(doc, {
+        head: [['#', 'Fecha', 'Monto', 'Nota']],
+        body: abonoTable,
+        startY: y,
+        styles: { fontSize: 9 },
+        margin: { left: 14 },
+        theme: 'grid',
+        headStyles: { fillColor: [0, 120, 0] }
+      })
+      y = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 6 : y + 6
+    } else {
+      y += 4
+    }
+
+    // Salto de página si se acerca al final
+    if (y > 260 && idx < creditsToExport.length - 1) {
+      doc.addPage()
+      y = 16
+    }
+  })
+
+  doc.save('reporte-creditos.pdf')
+}
 </script>
 
 <template>
   <div class="p-6">
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-bold text-ink">Créditos</h1>
+        <button 
+          @click="exportCreditsPDF"
+          class="flex items-center gap-2 px-4 py-2 bg-ink hover:bg-ink/90 text-white rounded-lg font-medium transition"
+        >
+          <i class="pi pi-file-pdf"></i>
+          Exportar PDF
+        </button>
       <button 
         @click="openNewModal"
         class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition"
