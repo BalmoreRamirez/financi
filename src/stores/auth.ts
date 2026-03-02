@@ -11,6 +11,8 @@ import { auth } from '../firebase/config'
 export interface User {
   email: string
   uid: string
+  displayName?: string
+  photoURL?: string | null
   isAuthenticated: boolean
 }
 
@@ -34,6 +36,8 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = {
           email: firebaseUser.email || '',
           uid: firebaseUser.uid,
+          displayName: firebaseUser.displayName || '',
+          photoURL: firebaseUser.photoURL,
           isAuthenticated: true
         }
       } else {
