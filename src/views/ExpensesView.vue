@@ -6,6 +6,7 @@ import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import Message from 'primevue/message'
+import { unifiedSelectPt } from '../utils/selectStyles'
 
 const store = useFinanceStore()
 
@@ -271,22 +272,23 @@ const registerExpense = () => {
             optionValue="value"
             placeholder="Seleccionar cuenta"
             class="w-full"
+            :pt="unifiedSelectPt"
           />
           <p class="text-xs text-gray-500 mt-1">El dinero saldrá de esta cuenta</p>
         </div>
       </div>
 
       <template #footer>
-        <div class="flex justify-end gap-2">
+        <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 w-full">
           <button 
             @click="closeModal"
-            class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            class="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
           >
             Cancelar
           </button>
           <button 
             @click="registerExpense"
-            class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            class="w-full sm:w-auto px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition"
           >
             Registrar
           </button>

@@ -8,6 +8,7 @@ import Textarea from 'primevue/textarea'
 import Select from 'primevue/select'
 import Message from 'primevue/message'
 import Paginator from 'primevue/paginator'
+import { unifiedSelectPt } from '../utils/selectStyles'
 
 const store = useFinanceStore()
 
@@ -324,6 +325,7 @@ const deleteInvestment = (id: number) => {
             optionValue="value"
             placeholder="Seleccionar Caja o Banco"
             class="w-full"
+            :pt="unifiedSelectPt"
           />
           <p class="text-xs text-gray-500 mt-1">El dinero de la inversión saldrá de esta cuenta</p>
         </div>
@@ -333,16 +335,16 @@ const deleteInvestment = (id: number) => {
         </Message>
       </div>
       <template #footer>
-        <div class="flex justify-end gap-3">
+        <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 w-full">
           <button 
             @click="showModal = false"
-            class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+            class="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
           >
             Cancelar
           </button>
           <button 
             @click="saveInvestment"
-            class="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition"
+            class="w-full sm:w-auto px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition"
           >
             {{ isEditing ? 'Guardar' : 'Crear' }}
           </button>
@@ -379,23 +381,25 @@ const deleteInvestment = (id: number) => {
             optionValue="value"
             placeholder="Seleccionar cuenta"
             class="w-full"
+            :pt="unifiedSelectPt"
           />
           <p class="text-xs text-gray-500 mt-1">El ingreso debe ir a Caja o Banco</p>
         </div>
       </div>
       <template #footer>
-        <div class="flex justify-end gap-3">
+        <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 w-full">
           <button 
             @click="showSellModal = false"
-            class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+            class="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
           >
             Cancelar
           </button>
           <button 
             @click="confirmSell"
-            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition"
+            class="w-full sm:w-auto px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition inline-flex items-center justify-center gap-2"
           >
-            <i class="pi pi-check mr-2"></i>Confirmar Venta
+            <i class="pi pi-check"></i>
+            Confirmar Venta
           </button>
         </div>
       </template>

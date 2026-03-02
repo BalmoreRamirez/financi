@@ -2,12 +2,12 @@
 import { ref, computed } from 'vue'
 import { useFinanceStore, type AccountType } from '../stores/finance'
 import Dialog from 'primevue/dialog'
-import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import Message from 'primevue/message'
 import Paginator from 'primevue/paginator'
+import { unifiedSelectPt } from '../utils/selectStyles'
 
 const store = useFinanceStore()
 
@@ -287,6 +287,7 @@ const deleteAccount = (id: number) => {
             optionValue="value"
             placeholder="Selecciona el tipo"
             class="w-full"
+            :pt="unifiedSelectPt"
           />
         </div>
 
@@ -304,17 +305,20 @@ const deleteAccount = (id: number) => {
       </div>
 
       <template #footer>
-        <div class="flex justify-end gap-2">
-          <Button 
-            label="Cancelar" 
-            severity="secondary" 
+        <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 w-full">
+          <button
             @click="showModal = false"
-          />
-          <Button 
-            :label="isEditing ? 'Actualizar' : 'Crear Cuenta'" 
-            icon="pi pi-check"
+            class="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+          >
+            Cancelar
+          </button>
+          <button
             @click="saveAccount"
-          />
+            class="w-full sm:w-auto px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition inline-flex items-center justify-center gap-2"
+          >
+            <i class="pi pi-check"></i>
+            {{ isEditing ? 'Actualizar' : 'Crear Cuenta' }}
+          </button>
         </div>
       </template>
     </Dialog>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useFinanceStore, type Credit } from '../stores/finance'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
@@ -7,6 +7,7 @@ import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import Message from 'primevue/message'
 import Paginator from 'primevue/paginator'
+import { unifiedSelectPt } from '../utils/selectStyles'
 
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -22,10 +23,18 @@ const showPaymentsModal = ref(false)
 const editingCredit = ref<Credit | null>(null)
 const selectedCredit = ref<Credit | null>(null)
 const isEditing = ref(false)
+const selectedStatus = ref<'todos' | 'aprobado' | 'proceso' | 'completado'>('todos')
 const paymentError = ref('')
 const paymentSuccess = ref('')
 const creditError = ref('')
 const creditSuccess = ref('')
+
+const statusOptions = [
+  { label: 'Todos', value: 'todos' },
+  { label: 'Aprobado', value: 'aprobado' },
+  { label: 'En Proceso', value: 'proceso' },
+  { label: 'Completado', value: 'completado' }
+]
 
 const form = ref({
   nombre: '',
@@ -51,11 +60,22 @@ const cashAccounts = computed(() =>
     .map(a => ({ label: `${a.nombre} (${formatCurrency(a.saldo)})`, value: a.id }))
 )
 
+const filteredCredits = computed(() => {
+  if (selectedStatus.value === 'todos') {
+    return store.credits
+  }
+  return store.credits.filter(credit => credit.estado === selectedStatus.value)
+})
+
 // Créditos paginados
 const paginatedCredits = computed(() => {
   const start = first.value
   const end = start + rows.value
-  return store.credits.slice(start, end)
+  return filteredCredits.value.slice(start, end)
+})
+
+watch(selectedStatus, () => {
+  first.value = 0
 })
 
 // Totales de créditos
@@ -311,6 +331,15 @@ const exportCreditsPDF = () => {
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
       <h1 class="text-2xl font-bold text-ink">Créditos</h1>
       <div class="flex w-full sm:w-auto flex-col sm:flex-row gap-2">
+        <Select
+          v-model="selectedStatus"
+          :options="statusOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Filtrar estado"
+          class="w-full sm:w-52"
+          :pt="unifiedSelectPt"
+        />
         <button 
           @click="exportCreditsPDF"
           class="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 bg-ink hover:bg-ink/90 text-white rounded-lg font-medium transition"
@@ -421,10 +450,10 @@ const exportCreditsPDF = () => {
       </div>
       <!-- Paginación -->
       <Paginator
-        v-if="store.credits.length > rows"
+        v-if="filteredCredits.length > rows"
         :first="first"
         :rows="rows"
-        :totalRecords="store.credits.length"
+        :totalRecords="filteredCredits.length"
         :rowsPerPageOptions="[10, 20, 50]"
         @page="onPageChange"
         class="border-t border-gray-100"
@@ -467,6 +496,7 @@ const exportCreditsPDF = () => {
             optionValue="value"
             placeholder="Seleccionar Caja o Banco"
             class="w-full"
+            :pt="unifiedSelectPt"
           />
           <p class="text-xs text-gray-500 mt-1">El dinero del préstamo saldrá de esta cuenta</p>
         </div>
@@ -483,16 +513,16 @@ const exportCreditsPDF = () => {
         </div>
       </div>
       <template #footer>
-        <div class="flex justify-end gap-3">
+        <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 w-full">
           <button 
             @click="showModal = false"
-            class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+            class="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
           >
             Cancelar
           </button>
           <button 
             @click="saveCredit"
-            class="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition"
+            class="w-full sm:w-auto px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition"
           >
             {{ isEditing ? 'Guardar' : 'Crear' }}
           </button>
@@ -559,6 +589,7 @@ const exportCreditsPDF = () => {
                 optionValue="value"
                 placeholder="Caja o Banco"
                 class="w-full"
+                :pt="unifiedSelectPt"
               />
             </div>
           </div>
@@ -623,10 +654,10 @@ const exportCreditsPDF = () => {
         </div>
       </div>
       <template #footer>
-        <div class="flex justify-end">
+        <div class="flex justify-end w-full">
           <button 
             @click="showPaymentsModal = false"
-            class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+            class="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
           >
             Cerrar
           </button>

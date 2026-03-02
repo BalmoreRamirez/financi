@@ -6,6 +6,7 @@ import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import Message from 'primevue/message'
+import { unifiedSelectPt } from '../utils/selectStyles'
 
 const store = useFinanceStore()
 
@@ -542,6 +543,7 @@ const getMonthName = (mes: number) => {
             optionValue="value"
             placeholder="Seleccionar cuenta"
             class="w-full"
+            :pt="unifiedSelectPt"
           />
           <p class="text-xs text-gray-500 mt-1">
             {{ operationType === 'aporte' ? 'El dinero entrará a esta cuenta' : 'El dinero saldrá de esta cuenta' }}
@@ -550,17 +552,17 @@ const getMonthName = (mes: number) => {
       </div>
 
       <template #footer>
-        <div class="flex justify-end gap-2">
+        <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 w-full">
           <button 
             @click="closeModal"
-            class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            class="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
           >
             Cancelar
           </button>
           <button 
             @click="processOperation"
             :class="[
-              'px-4 py-2 text-white rounded-lg transition-colors',
+              'w-full sm:w-auto px-4 py-2 text-white rounded-lg font-medium transition',
               operationType === 'aporte' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
             ]"
           >
@@ -601,6 +603,7 @@ const getMonthName = (mes: number) => {
               optionLabel="label" 
               optionValue="value"
               class="w-full"
+              :pt="unifiedSelectPt"
             />
           </div>
           <div>
@@ -611,6 +614,7 @@ const getMonthName = (mes: number) => {
               optionLabel="label" 
               optionValue="value"
               class="w-full"
+              :pt="unifiedSelectPt"
             />
           </div>
         </div>
@@ -688,10 +692,10 @@ const getMonthName = (mes: number) => {
       </div>
 
       <template #footer>
-        <div class="flex justify-end gap-2">
+        <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 w-full">
           <button 
             @click="closeClosingModal"
-            class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            class="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
           >
             Cancelar
           </button>
@@ -699,7 +703,7 @@ const getMonthName = (mes: number) => {
             @click="performClosing"
             :disabled="isSelectedMonthClosed || (totalIngresos === 0 && totalGastos === 0)"
             :class="[
-              'px-4 py-2 text-white rounded-lg transition-colors flex items-center gap-2',
+              'w-full sm:w-auto px-4 py-2 text-white rounded-lg font-medium transition inline-flex items-center justify-center gap-2',
               isSelectedMonthClosed || (totalIngresos === 0 && totalGastos === 0)
                 ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-primary hover:bg-primary/90'
