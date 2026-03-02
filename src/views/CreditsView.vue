@@ -136,6 +136,19 @@ const paymentsTableData = computed(() => {
   }))
 })
 
+const creditsFooterData = computed(() => ({
+  Nombre: '',
+  Estado: '',
+  Monto: { text: `Total: ${formatCurrency(totalMonto.value)}`, align: 'right', class: 'text-primary' },
+  Interés: '',
+  Total: { text: `Total: ${formatCurrency(totalTotal.value)}`, align: 'right', class: 'text-ink' },
+  Abonado: { text: `Total: ${formatCurrency(totalAbonado.value)}`, align: 'right', class: 'text-green-600' },
+  Resta: { text: `Total: ${formatCurrency(totalResta.value)}`, align: 'right', class: 'text-amber-600' },
+  'Fecha Inicio': '',
+  'Fecha Fin': '',
+  Acciones: ''
+}))
+
 const onCreditTableAction = (payload: { action: string; row: Record<string, unknown> }) => {
   const credit = payload.row.__raw as Credit | undefined
   if (!credit) return
@@ -417,27 +430,9 @@ const exportCreditsPDF = () => {
     <div class="bg-white rounded-xl shadow-card overflow-x-auto">
       <TableComponents
         :data="creditsTableData"
+        :footerData="creditsFooterData"
         @action="onCreditTableAction"
       />
-      <!-- Totales -->
-      <div class="bg-cloud border-t border-gray-200 flex flex-wrap justify-end gap-8 p-4 text-sm font-semibold">
-        <div>
-          <span class="text-gray-500 mr-2">Total Monto:</span>
-          <span class="text-primary">{{ formatCurrency(totalMonto) }}</span>
-        </div>
-        <div>
-          <span class="text-gray-500 mr-2">Total Abonado:</span>
-          <span class="text-green-600">{{ formatCurrency(totalAbonado) }}</span>
-        </div>
-        <div>
-          <span class="text-gray-500 mr-2">Total Resta:</span>
-          <span class="text-amber-600">{{ formatCurrency(totalResta) }}</span>
-        </div>
-        <div>
-          <span class="text-gray-500 mr-2">Total General:</span>
-          <span class="text-ink">{{ formatCurrency(totalTotal) }}</span>
-        </div>
-      </div>
       <!-- Paginación -->
       <Paginator
         v-if="filteredCredits.length > rows"

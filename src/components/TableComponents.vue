@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
 
 type TableRow = Record<string, any>
 
 const props = withDefaults(defineProps<{
     data: TableRow[]
+    footerData?: TableRow | null
     emptyText?: string
 }>(), {
+    footerData: null,
     emptyText: 'Sin datos disponibles'
 })
 
@@ -51,35 +55,38 @@ const emitAction = (action: string, row: TableRow) => {
 
 <template>
     <div class="overflow-x-auto">
-        <table class="w-full min-w-[720px]">
-            <thead class="bg-ink text-white">
-                <tr>
-                    <th
-                        v-for="column in columns"
-                        :key="column"
-                        class="px-4 py-3 text-left text-sm font-medium"
-                    >
-                        {{ column }}
-                    </th>
-                </tr>
-            </thead>
-            <tbody v-if="data.length" class="divide-y divide-gray-100">
-                <tr v-for="(row, index) in data" :key="index" class="hover:bg-cloud">
-                    <td
-                        v-for="column in columns"
-                        :key="column"
-                        :class="['px-4 py-3 text-sm text-ink', cellAlignClass(row[column]), cellContentClass(row[column])]"
-                    >
-                        <template v-if="isCellObject(row[column]) && row[column].type === 'badge'">
-                            <span :class="['inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold', row[column].class]">
-                                {{ cellText(row[column]) }}
+        <DataTable
+            :value="data"
+            responsiveLayout="scroll"
+            tableStyle="min-width: 720px"
+            class="app-data-table text-sm"
+        >
+            <template #empty>
+                <div class="px-4 py-6 text-center text-sm text-gray-400">
+                    {{ emptyText }}
+                </div>
+            </template>
+
+            <Column
+                v-for="column in columns"
+                :key="column"
+                :field="column"
+                :header="column"
+                headerClass="text-sm font-medium text-left"
+                bodyClass="text-ink text-left"
+            >
+                <template #body="slotProps">
+                    <div :class="['w-full text-left', cellContentClass(slotProps.data[column])]">
+                        <template v-if="isCellObject(slotProps.data[column]) && slotProps.data[column].type === 'badge'">
+                            <span :class="['inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold', slotProps.data[column].class]">
+                                {{ cellText(slotProps.data[column]) }}
                             </span>
                         </template>
 
-                        <template v-else-if="isCellObject(row[column]) && row[column].type === 'actions'">
+                        <template v-else-if="isCellObject(slotProps.data[column]) && slotProps.data[column].type === 'actions'">
                             <div class="flex items-center justify-center gap-2">
                                 <button
-                                    v-for="action in row[column].actions"
+                                    v-for="action in slotProps.data[column].actions"
                                     :key="action.key"
                                     :disabled="action.disabled"
                                     :title="action.title"
@@ -87,7 +94,7 @@ const emitAction = (action: string, row: TableRow) => {
                                         'p-2 rounded-lg transition',
                                         action.disabled ? (action.disabledClass ?? 'text-gray-300 cursor-not-allowed') : action.class
                                     ]"
-                                    @click="emitAction(action.key, row)"
+                                    @click="emitAction(action.key, slotProps.data)"
                                 >
                                     <i :class="['pi', action.icon]" />
                                 </button>
@@ -95,18 +102,64 @@ const emitAction = (action: string, row: TableRow) => {
                         </template>
 
                         <template v-else>
-                            {{ cellText(row[column]) }}
+                            {{ cellText(slotProps.data[column]) }}
                         </template>
-                    </td>
-                </tr>
-            </tbody>
-            <tbody v-else>
-                <tr>
-                    <td :colspan="columns.length || 1" class="px-4 py-6 text-center text-sm text-gray-400">
-                        {{ emptyText }}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                    </div>
+                </template>
+
+                <template #footer>
+                    <div
+                        v-if="footerData && footerData[column]"
+                        :class="[
+                            'w-full',
+                            cellAlignClass(footerData[column]),
+                            cellContentClass(footerData[column]),
+                            'text-sm font-semibold !text-left'
+                        ]"
+                    >
+                        <template v-if="isCellObject(footerData[column]) && footerData[column].type === 'badge'">
+                            <span :class="['inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold', footerData[column].class]">
+                                {{ cellText(footerData[column]) }}
+                            </span>
+                        </template>
+                        <template v-else>
+                            {{ cellText(footerData[column]) }}
+                        </template>
+                    </div>
+                </template>
+            </Column>
+        </DataTable>
     </div>
 </template>
+
+<style scoped>
+:deep(.app-data-table .p-datatable-table) {
+    width: 100%;
+}
+
+:deep(.app-data-table .p-datatable-thead > tr > th) {
+    background: rgb(11 49 69);
+    color: white;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-width: 0;
+}
+
+:deep(.app-data-table .p-datatable-tbody > tr > td) {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    border-top: 1px solid rgb(243 244 246);
+}
+
+:deep(.app-data-table .p-datatable-tbody > tr:hover) {
+    background: rgb(244 246 248);
+}
+
+:deep(.app-data-table .p-datatable-tfoot > tr > td),
+:deep(.app-data-table .p-datatable-tfoot > tr > th) {
+    padding: 0.75rem 1rem;
+    background: rgb(244 246 248);
+    border-top: 1px solid rgb(229 231 235);
+}
+</style>
