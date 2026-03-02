@@ -106,25 +106,6 @@ export interface AccountingClosure {
 }
 
 export const useFinanceStore = defineStore('finance', () => {
-    // Utilidad: actualizar descripciones de cuentas existentes según nombre
-    const updateDefaultAccountDescriptions = () => {
-      const descMap: Record<string, string> = {
-        'Inventario Inversiones': 'Fondos destinados a la compra y gestión de inversiones activas.',
-        'Caja': 'Efectivo disponible para operaciones diarias y gastos menores.',
-        'Préstamos por Cobrar': 'Dinero prestado a terceros pendiente de recuperación.',
-        'Banco': 'Saldo disponible en cuentas bancarias de la empresa.',
-        'Capital': 'Aportes de los socios o utilidades retenidas de la empresa.',
-        'Ganancias por Inversión': 'Ingresos obtenidos por la venta de inversiones.',
-        'Intereses Ganados': 'Intereses recibidos por préstamos o inversiones.',
-        'Gastos Operativos': 'Fondos destinados a cubrir los gastos recurrentes del negocio.',
-        'Cuentas por Pagar': 'Obligaciones de pago pendientes a terceros.'
-      }
-      accounts.value.forEach(acc => {
-        if (descMap[acc.nombre]) {
-          updateAccount(acc.id, { descripcion: descMap[acc.nombre] })
-        }
-      })
-    }
   // Firebase sync state
   const isLoading = ref(true)
   const isInitialized = ref(false)
