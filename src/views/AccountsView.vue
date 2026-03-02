@@ -159,12 +159,12 @@ const deleteAccount = (id: number) => {
 </script>
 
 <template>
-  <div class="p-6">
-    <div class="flex items-center justify-between mb-6">
+  <div class="p-4 sm:p-6">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
       <h1 class="text-2xl font-bold text-ink">Cuentas Contables</h1>
       <button 
         @click="openCreateModal"
-        class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition"
+        class="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition"
       >
         <i class="pi pi-plus"></i>
         Nueva Cuenta
@@ -172,7 +172,7 @@ const deleteAccount = (id: number) => {
     </div>
 
     <!-- Summary Table -->
-    <div class="bg-white rounded-xl shadow-card p-6 overflow-x-auto">
+    <div class="bg-white rounded-xl shadow-card p-4 sm:p-6 overflow-x-auto">
       <table class="w-full min-w-[800px]">
         <thead class="bg-cloud">
           <tr>

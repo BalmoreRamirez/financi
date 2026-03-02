@@ -169,7 +169,7 @@ const deleteInvestment = (id: number) => {
 </script>
 
 <template>
-  <div class="p-6">
+  <div class="p-4 sm:p-6">
     <!-- Indicadores resumen de flujo de inversiones -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
       <div class="bg-white rounded-xl shadow-card p-4 flex flex-col items-start">
@@ -189,7 +189,7 @@ const deleteInvestment = (id: number) => {
         <span class="text-lg font-bold text-green-700">{{ formatCurrency(store.investments.filter(inv => inv.vendida).reduce((sum, inv) => sum + (inv.gananciaReal || 0), 0)) }}</span>
       </div>
     </div>
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
       <div>
         <h1 class="text-2xl font-bold text-ink">Inversiones</h1>
         <p class="text-sm text-gray-500 mt-1">
@@ -199,7 +199,7 @@ const deleteInvestment = (id: number) => {
       </div>
       <button 
         @click="openNewModal"
-        class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition"
+        class="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition"
       >
         <i class="pi pi-plus"></i>
         Nueva Inversión
@@ -208,7 +208,7 @@ const deleteInvestment = (id: number) => {
 
     <!-- Investments Table -->
     <div class="bg-white rounded-xl shadow-card overflow-x-auto">
-      <table class="w-full min-w-[600px]">
+      <table class="w-full min-w-[760px]">
         <thead class="bg-ink text-white">
           <tr>
             <th class="px-4 py-3 text-left text-sm font-medium">Nombre</th>
@@ -303,7 +303,7 @@ const deleteInvestment = (id: number) => {
           <label class="block text-sm font-medium text-ink mb-1">Descripción</label>
           <Textarea v-model="form.descripcion" rows="3" class="w-full" placeholder="Describe la inversión" />
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-ink mb-1">Costo</label>
             <InputNumber v-model="form.costo" mode="currency" currency="MXN" locale="es-MX" class="w-full" />

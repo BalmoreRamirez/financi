@@ -307,28 +307,30 @@ const exportCreditsPDF = () => {
 </script>
 
 <template>
-  <div class="p-6">
-    <div class="flex items-center justify-between mb-6">
+  <div class="p-4 sm:p-6">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
       <h1 class="text-2xl font-bold text-ink">Créditos</h1>
+      <div class="flex w-full sm:w-auto flex-col sm:flex-row gap-2">
         <button 
           @click="exportCreditsPDF"
-          class="flex items-center gap-2 px-4 py-2 bg-ink hover:bg-ink/90 text-white rounded-lg font-medium transition"
+          class="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 bg-ink hover:bg-ink/90 text-white rounded-lg font-medium transition"
         >
           <i class="pi pi-file-pdf"></i>
           Exportar PDF
         </button>
       <button 
         @click="openNewModal"
-        class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition"
+        class="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition"
       >
         <i class="pi pi-plus"></i>
         Nuevo Crédito
       </button>
+      </div>
     </div>
 
     <!-- Credits Table -->
-    <div class="bg-white rounded-xl shadow-card overflow-hidden">
-      <table class="w-full">
+    <div class="bg-white rounded-xl shadow-card overflow-x-auto">
+      <table class="w-full min-w-[980px]">
         <thead class="bg-ink text-white">
           <tr>
             <th class="px-4 py-3 text-left text-sm font-medium">Nombre</th>
@@ -444,7 +446,7 @@ const exportCreditsPDF = () => {
           <label class="block text-sm font-medium text-ink mb-1">Nombre</label>
           <InputText v-model="form.nombre" class="w-full" placeholder="Nombre del cliente" />
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-ink mb-1">Monto</label>
             <InputNumber v-model="form.monto" mode="currency" currency="MXN" locale="es-MX" class="w-full" />
@@ -469,7 +471,7 @@ const exportCreditsPDF = () => {
           <p class="text-xs text-gray-500 mt-1">El dinero del préstamo saldrá de esta cuenta</p>
         </div>
         
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-ink mb-1">Fecha Inicio</label>
             <InputText v-model="form.fechaInicio" type="date" class="w-full" />
@@ -514,7 +516,7 @@ const exportCreditsPDF = () => {
         </div>
 
         <!-- Summary -->
-        <div class="grid grid-cols-3 gap-4 mb-4 p-4 bg-cloud rounded-lg">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 p-4 bg-cloud rounded-lg">
           <div class="text-center">
             <p class="text-sm text-gray-500">Total Crédito</p>
             <p class="text-lg font-bold text-ink">{{ formatCurrency(selectedCredit.montoTotal) }}</p>
@@ -536,7 +538,7 @@ const exportCreditsPDF = () => {
           <Message v-if="paymentError" severity="error" :closable="false" class="mb-3">{{ paymentError }}</Message>
           <Message v-if="paymentSuccess" severity="success" :closable="false" class="mb-3">{{ paymentSuccess }}</Message>
           
-          <div class="grid grid-cols-2 gap-3 mb-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <div>
               <label class="block text-xs text-gray-500 mb-1">Monto</label>
               <InputNumber 
@@ -560,7 +562,7 @@ const exportCreditsPDF = () => {
               />
             </div>
           </div>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs text-gray-500 mb-1">Fecha</label>
               <InputText v-model="newPayment.fecha" type="date" class="w-full" />
@@ -595,8 +597,8 @@ const exportCreditsPDF = () => {
         </div>
 
         <!-- Payments List -->
-        <div v-if="selectedCredit.abonos.length > 0" class="overflow-hidden rounded-lg border border-gray-200">
-          <table class="w-full">
+        <div v-if="selectedCredit.abonos.length > 0" class="overflow-x-auto rounded-lg border border-gray-200">
+          <table class="w-full min-w-[520px]">
             <thead class="bg-gray-100">
               <tr>
                 <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">#</th>
