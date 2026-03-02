@@ -6,6 +6,7 @@ import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import Message from 'primevue/message'
+import ViewTitle from '../components/ViewTitle.vue'
 import { unifiedSelectPt } from '../utils/selectStyles'
 
 const store = useFinanceStore()
@@ -144,16 +145,16 @@ const registerExpense = () => {
 </script>
 
 <template>
-  <div class="p-6">
+  <div class="p-4 sm:p-6">
     <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-ink">Gastos Operativos</h1>
+        <ViewTitle title="Gastos Operativos" />
         <p class="text-gray-500 mt-1">Gestiona los gastos de operación del negocio</p>
       </div>
       <button 
         @click="openModal"
-        class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
+        class="w-full sm:w-auto px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
       >
         <i class="pi pi-plus"></i>
         Registrar Gasto

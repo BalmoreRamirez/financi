@@ -7,6 +7,8 @@ import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import Message from 'primevue/message'
 import Paginator from 'primevue/paginator'
+import TableComponents from '../components/TableComponents.vue'
+import ViewTitle from '../components/ViewTitle.vue'
 import { unifiedSelectPt } from '../utils/selectStyles'
 
 import jsPDF from 'jspdf'
@@ -87,6 +89,60 @@ const totalResta = computed(() => store.credits.reduce((sum, c) => sum + c.resta
 const onPageChange = (event: { first: number; rows: number }) => {
   first.value = event.first
   rows.value = event.rows
+}
+
+const creditsTableData = computed(() => {
+  return paginatedCredits.value.map((credit) => ({
+    Nombre: { text: credit.nombre, class: 'font-medium' },
+    Estado: { type: 'badge', label: getStatusLabel(credit.estado).toUpperCase(), class: getStatusClass(credit.estado), align: 'center' },
+    Monto: { text: formatCurrency(credit.monto), align: 'right' },
+    Interés: { text: `${credit.interes}%`, align: 'right' },
+    Total: { text: formatCurrency(credit.montoTotal), align: 'right', class: 'font-semibold' },
+    Abonado: { text: formatCurrency(credit.abonado), align: 'right', class: 'text-green-600' },
+    Resta: { text: formatCurrency(credit.resta), align: 'right', class: 'text-amber-600 font-semibold' },
+    'Fecha Inicio': { text: credit.fechaInicio, align: 'center' },
+    'Fecha Fin': { text: credit.fechaFin || '-', align: 'center' },
+    Acciones: {
+      type: 'actions',
+      actions: [
+        { key: 'payments', icon: 'pi-list', title: 'Ver abonos', class: 'text-blue-500 hover:bg-blue-50' },
+        {
+          key: 'edit',
+          icon: 'pi-pencil',
+          title: credit.estado === 'aprobado' ? 'Editar' : 'Solo se puede editar un crédito en estado aprobado',
+          disabled: credit.estado !== 'aprobado',
+          class: 'text-primary hover:bg-primary/10'
+        },
+        {
+          key: 'delete',
+          icon: 'pi-trash',
+          title: canDelete(credit) ? 'Eliminar' : 'No se puede eliminar un crédito en proceso o completado',
+          disabled: !canDelete(credit),
+          class: 'text-red-500 hover:bg-red-50'
+        }
+      ]
+    },
+    __raw: credit
+  }))
+})
+
+const paymentsTableData = computed(() => {
+  if (!selectedCredit.value) return []
+  return selectedCredit.value.abonos.map((abono, index) => ({
+    '#': { text: index + 1, class: 'text-gray-500' },
+    Fecha: abono.fecha,
+    Monto: { text: formatCurrency(abono.monto), align: 'right', class: 'text-green-600 font-medium' },
+    Nota: abono.nota || '-'
+  }))
+})
+
+const onCreditTableAction = (payload: { action: string; row: Record<string, unknown> }) => {
+  const credit = payload.row.__raw as Credit | undefined
+  if (!credit) return
+
+  if (payload.action === 'payments') openPaymentsModal(credit)
+  if (payload.action === 'edit') openEditModal(credit)
+  if (payload.action === 'delete') deleteCredit(credit.id)
 }
 
 const formatCurrency = (value: number) => {
@@ -329,7 +385,7 @@ const exportCreditsPDF = () => {
 <template>
   <div class="p-4 sm:p-6">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-      <h1 class="text-2xl font-bold text-ink">Créditos</h1>
+      <ViewTitle title="Créditos" />
       <div class="flex w-full sm:w-auto flex-col sm:flex-row gap-2">
         <Select
           v-model="selectedStatus"
@@ -359,76 +415,10 @@ const exportCreditsPDF = () => {
 
     <!-- Credits Table -->
     <div class="bg-white rounded-xl shadow-card overflow-x-auto">
-      <table class="w-full min-w-[980px]">
-        <thead class="bg-ink text-white">
-          <tr>
-            <th class="px-4 py-3 text-left text-sm font-medium">Nombre</th>
-            <th class="px-4 py-3 text-center text-sm font-medium">Estado</th>
-            <th class="px-4 py-3 text-right text-sm font-medium">Monto</th>
-            <th class="px-4 py-3 text-right text-sm font-medium">Interés</th>
-            <th class="px-4 py-3 text-right text-sm font-medium">Total</th>
-            <th class="px-4 py-3 text-right text-sm font-medium">Abonado</th>
-            <th class="px-4 py-3 text-right text-sm font-medium">Resta</th>
-            <th class="px-4 py-3 text-center text-sm font-medium">Fecha Inicio</th>
-            <th class="px-4 py-3 text-center text-sm font-medium">Fecha Fin</th>
-            <th class="px-4 py-3 text-center text-sm font-medium">Acciones</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          <tr v-for="credit in paginatedCredits" :key="credit.id" class="hover:bg-cloud">
-            <td class="px-4 py-3 text-sm text-ink font-medium">{{ credit.nombre }}</td>
-            <td class="px-4 py-3 text-center">
-              <span :class="['px-2 py-1 rounded-full text-xs font-medium', getStatusClass(credit.estado)]">
-                {{ getStatusLabel(credit.estado) }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-sm text-ink text-right">{{ formatCurrency(credit.monto) }}</td>
-            <td class="px-4 py-3 text-sm text-ink text-right">{{ credit.interes }}%</td>
-            <td class="px-4 py-3 text-sm text-ink text-right font-semibold">{{ formatCurrency(credit.montoTotal) }}</td>
-            <td class="px-4 py-3 text-sm text-green-600 text-right">{{ formatCurrency(credit.abonado) }}</td>
-            <td class="px-4 py-3 text-sm text-amber-600 text-right font-semibold">{{ formatCurrency(credit.resta) }}</td>
-            <td class="px-4 py-3 text-sm text-ink text-center">{{ credit.fechaInicio }}</td>
-            <td class="px-4 py-3 text-sm text-ink text-center">{{ credit.fechaFin }}</td>
-            <td class="px-4 py-3 text-center">
-              <div class="flex items-center justify-center gap-2">
-                <button 
-                  @click="openPaymentsModal(credit)"
-                  class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition"
-                  title="Ver abonos"
-                >
-                  <i class="pi pi-list"></i>
-                </button>
-                <button 
-                  @click="openEditModal(credit)"
-                  :disabled="credit.estado !== 'aprobado'"
-                  :class="[
-                    'p-2 rounded-lg transition',
-                    credit.estado === 'aprobado'
-                      ? 'text-primary hover:bg-primary/10'
-                      : 'text-gray-300 cursor-not-allowed'
-                  ]"
-                  :title="credit.estado === 'aprobado' ? 'Editar' : 'Solo se puede editar un crédito en estado aprobado'"
-                >
-                  <i class="pi pi-pencil"></i>
-                </button>
-                <button 
-                  @click="deleteCredit(credit.id)"
-                  :disabled="!canDelete(credit)"
-                  :class="[
-                    'p-2 rounded-lg transition',
-                    canDelete(credit) 
-                      ? 'text-red-500 hover:bg-red-50' 
-                      : 'text-gray-300 cursor-not-allowed'
-                  ]"
-                  :title="canDelete(credit) ? 'Eliminar' : 'No se puede eliminar un crédito en proceso o completado'"
-                >
-                  <i class="pi pi-trash"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <TableComponents
+        :data="creditsTableData"
+        @action="onCreditTableAction"
+      />
       <!-- Totales -->
       <div class="bg-cloud border-t border-gray-200 flex flex-wrap justify-end gap-8 p-4 text-sm font-semibold">
         <div>
@@ -629,24 +619,7 @@ const exportCreditsPDF = () => {
 
         <!-- Payments List -->
         <div v-if="selectedCredit.abonos.length > 0" class="overflow-x-auto rounded-lg border border-gray-200">
-          <table class="w-full min-w-[520px]">
-            <thead class="bg-gray-100">
-              <tr>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">#</th>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Fecha</th>
-                <th class="px-4 py-2 text-right text-sm font-medium text-gray-600">Monto</th>
-                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Nota</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-              <tr v-for="(abono, index) in selectedCredit.abonos" :key="abono.id" class="hover:bg-gray-50">
-                <td class="px-4 py-2 text-sm text-gray-500">{{ index + 1 }}</td>
-                <td class="px-4 py-2 text-sm text-ink">{{ abono.fecha }}</td>
-                <td class="px-4 py-2 text-sm text-green-600 text-right font-medium">{{ formatCurrency(abono.monto) }}</td>
-                <td class="px-4 py-2 text-sm text-gray-500">{{ abono.nota }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <TableComponents :data="paymentsTableData" />
         </div>
         <div v-else class="text-center py-8 text-gray-400">
           <i class="pi pi-inbox text-4xl mb-2"></i>

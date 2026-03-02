@@ -7,6 +7,8 @@ import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import Message from 'primevue/message'
 import Paginator from 'primevue/paginator'
+import TableComponents from '../components/TableComponents.vue'
+import ViewTitle from '../components/ViewTitle.vue'
 import { unifiedSelectPt } from '../utils/selectStyles'
 
 const store = useFinanceStore()
@@ -66,28 +68,6 @@ const onPageChange = (event: { first: number; rows: number }) => {
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value)
-}
-
-const getAccountIcon = (tipo: string) => {
-  switch (tipo) {
-    case 'activo': return 'pi-chart-line'
-    case 'pasivo': return 'pi-credit-card'
-    case 'capital': return 'pi-wallet'
-    case 'ingreso': return 'pi-arrow-down'
-    case 'gasto': return 'pi-arrow-up'
-    default: return 'pi-folder'
-  }
-}
-
-const getAccountColor = (tipo: string) => {
-  switch (tipo) {
-    case 'activo': return 'bg-green-600'
-    case 'pasivo': return 'bg-red-600'
-    case 'capital': return 'bg-primary'
-    case 'ingreso': return 'bg-blue-600'
-    case 'gasto': return 'bg-orange-600'
-    default: return 'bg-gray-600'
-  }
 }
 
 const getAccountBadgeClass = (tipo: string) => {
@@ -156,12 +136,53 @@ const deleteAccount = (id: number) => {
     showModal.value = true
   }
 }
+
+const accountTableData = computed(() => {
+  return paginatedAccounts.value.map((account) => ({
+    Cuenta: { text: account.nombre, class: 'font-medium' },
+    Descripción: account.descripcion || '-',
+    Tipo: { type: 'badge', label: account.tipo.toUpperCase(), class: getAccountBadgeClass(account.tipo), align: 'center' },
+    Saldo: {
+      text: formatCurrency(account.saldo),
+      align: 'right',
+      class: account.saldo >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'
+    },
+    Acciones: {
+      type: 'actions',
+      actions: [
+        {
+          key: 'edit',
+          icon: 'pi-pencil',
+          title: account.protegida ? 'Cuenta protegida' : 'Editar',
+          disabled: !!account.protegida,
+          class: 'text-primary hover:bg-primary/10'
+        },
+        {
+          key: 'delete',
+          icon: 'pi-trash',
+          title: account.protegida ? 'Cuenta protegida' : 'Eliminar',
+          disabled: !!account.protegida,
+          class: 'text-red-500 hover:bg-red-50'
+        }
+      ]
+    },
+    __raw: account
+  }))
+})
+
+const onAccountTableAction = (payload: { action: string; row: Record<string, unknown> }) => {
+  const account = payload.row.__raw as { id: number; nombre: string; descripcion?: string; tipo: AccountType; saldo: number } | undefined
+  if (!account) return
+
+  if (payload.action === 'edit') openEditModal(account)
+  if (payload.action === 'delete') deleteAccount(account.id)
+}
 </script>
 
 <template>
   <div class="p-4 sm:p-6">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-      <h1 class="text-2xl font-bold text-ink">Cuentas Contables</h1>
+      <ViewTitle title="Cuentas Contables" />
       <button 
         @click="openCreateModal"
         class="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition"
@@ -172,66 +193,11 @@ const deleteAccount = (id: number) => {
     </div>
 
     <!-- Summary Table -->
-    <div class="bg-white rounded-xl shadow-card p-4 sm:p-6 overflow-x-auto">
-      <table class="w-full min-w-[800px]">
-        <thead class="bg-cloud">
-          <tr>
-            <th class="px-4 py-3 text-left text-sm font-medium text-ink">Cuenta</th>
-            <th class="px-4 py-3 text-left text-sm font-medium text-ink">Descripción</th>
-            <th class="px-4 py-3 text-center text-sm font-medium text-ink">Tipo</th>
-            <th class="px-4 py-3 text-right text-sm font-medium text-ink">Saldo</th>
-            <th class="px-4 py-3 text-center text-sm font-medium text-ink">Acciones</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          <tr v-for="account in paginatedAccounts" :key="account.id" class="hover:bg-cloud">
-            <td class="px-4 py-3 text-sm text-ink font-medium">
-              <div class="flex items-center gap-2">
-                <div :class="[getAccountColor(account.tipo), 'w-8 h-8 rounded-lg flex items-center justify-center']">
-                  <i :class="['pi', getAccountIcon(account.tipo), 'text-white text-sm']"></i>
-                </div>
-                {{ account.nombre }}
-              </div>
-            </td>
-            <td class="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">{{ account.descripcion }}</td>
-            <td class="px-4 py-3 text-center">
-              <span 
-                :class="[
-                  'px-2 py-1 rounded text-xs font-medium uppercase',
-                  getAccountBadgeClass(account.tipo)
-                ]"
-              >
-                {{ account.tipo }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-right text-sm font-semibold" :class="account.saldo >= 0 ? 'text-green-600' : 'text-red-600'">
-              {{ formatCurrency(account.saldo) }}
-            </td>
-            <td class="px-4 py-3 text-center">
-              <div class="flex justify-center gap-2">
-                <button 
-                  @click="openEditModal(account)"
-                  class="p-2 rounded-lg bg-blue-100 "
-                  :class="account.protegida?'text-gray-300 cursor-not-allowed':'text-blue-600 hover:bg-blue-200'"
-                  :disabled="account.protegida"
-                  :title="account.protegida ? 'Cuenta protegida' : 'Editar'"
-                >
-                  <i class="pi pi-pencil text-sm"></i>
-                </button>
-                <button 
-                  @click="deleteAccount(account.id)"
-                  class="p-2 rounded-lg bg-red-100 "
-                  :class="account.protegida?'text-gray-300 cursor-not-allowed':'text-red-600 hover:bg-red-200'"
-                  :disabled="account.protegida"
-                  :title="account.protegida ? 'Cuenta protegida' : 'Eliminar'"
-                >
-                  <i class="pi pi-trash text-sm"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="bg-white rounded-xl shadow-card overflow-x-auto">
+      <TableComponents
+        :data="accountTableData"
+        @action="onAccountTableAction"
+      />
       
       <!-- Paginación -->
       <Paginator

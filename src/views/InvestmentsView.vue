@@ -8,6 +8,8 @@ import Textarea from 'primevue/textarea'
 import Select from 'primevue/select'
 import Message from 'primevue/message'
 import Paginator from 'primevue/paginator'
+import TableComponents from '../components/TableComponents.vue'
+import ViewTitle from '../components/ViewTitle.vue'
 import { unifiedSelectPt } from '../utils/selectStyles'
 
 const store = useFinanceStore()
@@ -53,6 +55,46 @@ const paginatedInvestments = computed(() => {
 const onPageChange = (event: { first: number; rows: number }) => {
   first.value = event.first
   rows.value = event.rows
+}
+
+const investmentsTableData = computed(() => {
+  return paginatedInvestments.value.map((investment) => ({
+    Nombre: { text: investment.nombre, class: 'font-medium' },
+    Descripción: investment.descripcion,
+    Costo: { text: formatCurrency(investment.costo), align: 'right' },
+    'Gan. Estimada': { text: formatCurrency(investment.gananciaEstimada), align: 'right', class: 'text-orange-500' },
+    'Gan. Real': {
+      text: investment.vendida ? formatCurrency(investment.gananciaReal) : '-',
+      align: 'right',
+      class: 'text-green-600 font-semibold'
+    },
+    Estado: {
+      type: 'badge',
+      label: investment.vendida ? 'VENDIDA' : 'ACTIVA',
+      class: investment.vendida ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700',
+      align: 'center'
+    },
+    Acciones: investment.vendida
+      ? { text: investment.fechaVenta || '-', class: 'text-gray-400 text-xs', align: 'center' }
+      : {
+          type: 'actions',
+          actions: [
+            { key: 'sell', icon: 'pi-dollar', title: 'Vender inversión', class: 'text-green-600 hover:bg-green-50' },
+            { key: 'edit', icon: 'pi-pencil', title: 'Editar', class: 'text-primary hover:bg-primary/10' },
+            { key: 'delete', icon: 'pi-trash', title: 'Eliminar', class: 'text-red-500 hover:bg-red-50' }
+          ]
+        },
+    __raw: investment
+  }))
+})
+
+const onInvestmentTableAction = (payload: { action: string; row: Record<string, unknown> }) => {
+  const investment = payload.row.__raw as Investment | undefined
+  if (!investment) return
+
+  if (payload.action === 'sell') openSellModal(investment)
+  if (payload.action === 'edit') openEditModal(investment)
+  if (payload.action === 'delete') deleteInvestment(investment.id)
 }
 
 const formatCurrency = (value: number) => {
@@ -192,7 +234,7 @@ const deleteInvestment = (id: number) => {
     </div>
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-ink">Inversiones</h1>
+        <ViewTitle title="Inversiones" />
         <p class="text-sm text-gray-500 mt-1">
           Ganancia estimada: {{ formatCurrency(store.totalEstimatedGains) }} | 
           Ganancia realizada: {{ formatCurrency(store.totalGains) }}
@@ -209,69 +251,10 @@ const deleteInvestment = (id: number) => {
 
     <!-- Investments Table -->
     <div class="bg-white rounded-xl shadow-card overflow-x-auto">
-      <table class="w-full min-w-[760px]">
-        <thead class="bg-ink text-white">
-          <tr>
-            <th class="px-4 py-3 text-left text-sm font-medium">Nombre</th>
-            <th class="px-4 py-3 text-left text-sm font-medium">Descripción</th>
-            <th class="px-4 py-3 text-right text-sm font-medium">Costo</th>
-            <th class="px-4 py-3 text-right text-sm font-medium">Gan. Estimada</th>
-            <th class="px-4 py-3 text-right text-sm font-medium">Gan. Real</th>
-            <th class="px-4 py-3 text-center text-sm font-medium">Estado</th>
-            <th class="px-4 py-3 text-center text-sm font-medium">Acciones</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          <tr v-for="investment in paginatedInvestments" :key="investment.id" class="hover:bg-cloud">
-            <td class="px-4 py-3 text-sm text-ink font-medium">{{ investment.nombre }}</td>
-            <td class="px-4 py-3 text-sm text-gray-600">{{ investment.descripcion }}</td>
-            <td class="px-4 py-3 text-sm text-ink text-right">{{ formatCurrency(investment.costo) }}</td>
-            <td class="px-4 py-3 text-sm text-orange-500 text-right">{{ formatCurrency(investment.gananciaEstimada) }}</td>
-            <td class="px-4 py-3 text-sm text-green-600 text-right font-semibold">
-              {{ investment.vendida ? formatCurrency(investment.gananciaReal) : '-' }}
-            </td>
-            <td class="px-4 py-3 text-center">
-              <span 
-                :class="[
-                  'px-2 py-1 rounded-full text-xs font-medium',
-                  investment.vendida ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                ]"
-              >
-                {{ investment.vendida ? 'Vendida' : 'Activa' }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-center">
-              <div class="flex items-center justify-center gap-2">
-                <button 
-                  v-if="!investment.vendida"
-                  @click="openSellModal(investment)"
-                  class="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
-                  title="Vender inversión"
-                >
-                  <i class="pi pi-dollar"></i>
-                </button>
-                <button 
-                  v-if="!investment.vendida"
-                  @click="openEditModal(investment)"
-                  class="p-2 text-primary hover:bg-primary/10 rounded-lg transition"
-                >
-                  <i class="pi pi-pencil"></i>
-                </button>
-                <button 
-                  v-if="!investment.vendida"
-                  @click="deleteInvestment(investment.id)"
-                  class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
-                >
-                  <i class="pi pi-trash"></i>
-                </button>
-                <span v-if="investment.vendida" class="text-xs text-gray-400">
-                  {{ investment.fechaVenta }}
-                </span>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <TableComponents
+        :data="investmentsTableData"
+        @action="onInvestmentTableAction"
+      />
       
       <!-- Paginación -->
       <Paginator

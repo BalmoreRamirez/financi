@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Message from 'primevue/message'
+import ViewTitle from '../components/ViewTitle.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -40,7 +41,7 @@ const handleKeyPress = (event: KeyboardEvent) => {
         <div class="w-16 h-16 bg-primary rounded-xl flex items-center justify-center mx-auto mb-4">
           <i class="pi pi-wallet text-white text-3xl"></i>
         </div>
-        <h1 class="text-2xl font-bold text-ink">Financi</h1>
+        <ViewTitle title="Financi" />
         <p class="text-gray-500 mt-1">Sistema de Gestión Financiera</p>
       </div>
 

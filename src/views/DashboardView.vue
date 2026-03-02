@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useFinanceStore } from '../stores/finance'
 import { computed } from 'vue'
+import ViewTitle from '../components/ViewTitle.vue'
 
 const store = useFinanceStore()
 
@@ -37,8 +38,8 @@ const summaryCards = computed(() => [
 </script>
 
 <template>
-  <div class="p-6">
-    <h1 class="text-2xl font-bold text-ink mb-6">Dashboard</h1>
+  <div class="p-4 sm:p-6">
+    <ViewTitle title="Dashboard" class="mb-6" />
     
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

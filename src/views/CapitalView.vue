@@ -6,6 +6,7 @@ import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import Message from 'primevue/message'
+import ViewTitle from '../components/ViewTitle.vue'
 import { unifiedSelectPt } from '../utils/selectStyles'
 
 const store = useFinanceStore()
@@ -307,31 +308,31 @@ const getMonthName = (mes: number) => {
 </script>
 
 <template>
-  <div class="p-6">
+  <div class="p-4 sm:p-6">
     <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-ink">Capital</h1>
+        <ViewTitle title="Capital" />
         <p class="text-gray-500 mt-1">Gestiona aportes y retiros de capital</p>
       </div>
-      <div class="flex gap-2">
+      <div class="flex w-full sm:w-auto flex-col sm:flex-row gap-2">
         <button 
           @click="openClosingModal"
-          class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
+          class="w-full sm:w-auto px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
         >
           <i class="pi pi-calculator"></i>
           Cierre Mensual
         </button>
         <button 
           @click="openAporteModal"
-          class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+          class="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
         >
           <i class="pi pi-arrow-down"></i>
           Aporte
         </button>
         <button 
           @click="openRetiroModal"
-          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+          class="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
         >
           <i class="pi pi-arrow-up"></i>
           Retiro
