@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import DashboardView from '../views/DashboardView.vue'
 import CreditsView from '../views/CreditsView.vue'
+import CreditsHistoryView from '../views/CreditsHistoryView.vue'
 import InvestmentsView from '../views/InvestmentsView.vue'
 import AccountsView from '../views/AccountsView.vue'
 import ExpensesView from '../views/ExpensesView.vue'
@@ -27,6 +28,12 @@ const router = createRouter({
       path: '/credits',
       name: 'credits',
       component: CreditsView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/credits/history',
+      name: 'credits-history',
+      component: CreditsHistoryView,
       meta: { requiresAuth: true }
     },
     {

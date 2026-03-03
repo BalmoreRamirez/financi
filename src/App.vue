@@ -10,6 +10,7 @@ const sidebarCollapsed = ref(false)
 const sidebarOpen = ref(false) // Para drawer en móvil/tablet
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
 const profileMenuOpen = ref(false)
+const expandedMenus = ref<string[]>([]) // Para controlar subitems expandidos
 
 function updateWindowWidth() {
   windowWidth.value = window.innerWidth
@@ -21,6 +22,19 @@ const toggleProfileMenu = () => {
 
 const closeProfileMenu = () => {
   profileMenuOpen.value = false
+}
+
+const toggleSubmenu = (itemName: string) => {
+  const index = expandedMenus.value.indexOf(itemName)
+  if (index > -1) {
+    expandedMenus.value.splice(index, 1)
+  } else {
+    expandedMenus.value.push(itemName)
+  }
+}
+
+const isSubmenuExpanded = (itemName: string) => {
+  return expandedMenus.value.includes(itemName)
 }
 
 const handleProfileClickOutside = (event: MouseEvent) => {
@@ -48,9 +62,24 @@ onUnmounted(() => {
   }
 })
 
-const menuItems = [
+interface MenuItem {
+  name: string
+  path: string
+  icon: string
+  subitems?: { name: string; path: string }[]
+}
+
+const menuItems: MenuItem[] = [
   { name: 'Dashboard', path: '/', icon: 'pi-home' },
-  { name: 'Créditos', path: '/credits', icon: 'pi-money-bill' },
+  {
+    name: 'Créditos',
+    path: '/credits',
+    icon: 'pi-money-bill',
+    subitems: [
+      { name: 'Activos', path: '/credits' },
+      { name: 'Historial', path: '/credits/history' }
+    ]
+  },
   { name: 'Inversiones', path: '/investments', icon: 'pi-chart-line' },
   { name: 'Gastos', path: '/expenses', icon: 'pi-arrow-up' },
   { name: 'Capital', path: '/capital', icon: 'pi-building-columns' },
@@ -155,7 +184,48 @@ const userInitial = computed(() => {
       <nav class="flex-1 p-4">
         <ul class="space-y-2">
           <li v-for="item in menuItems" :key="item.path">
-            <RouterLink 
+            <!-- Item con subitems -->
+            <div v-if="item.subitems">
+              <button
+                @click="toggleSubmenu(item.name)"
+                :class="[
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors w-full',
+                  route.path.startsWith(item.path)
+                    ? 'bg-primary text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                ]"
+              >
+                <i :class="['pi', item.icon, 'text-lg']"></i>
+                <span v-if="!sidebarCollapsed" class="flex-1 text-left">{{ item.name }}</span>
+                <i
+                  v-if="!sidebarCollapsed"
+                  :class="['pi', isSubmenuExpanded(item.name) ? 'pi-chevron-down' : 'pi-chevron-right', 'text-xs transition-transform']"
+                ></i>
+              </button>
+
+              <!-- Subitems -->
+              <ul v-if="isSubmenuExpanded(item.name) && !sidebarCollapsed" class="ml-6 mt-1 space-y-1">
+                <li v-for="subitem in item.subitems" :key="subitem.path">
+                  <RouterLink
+                    :to="subitem.path"
+                    @click.native="sidebarOpen = false"
+                    :class="[
+                      'flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm',
+                      route.path === subitem.path
+                        ? 'bg-white/10 text-white font-medium'
+                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                    ]"
+                  >
+                    <i class="pi pi-circle-fill text-[6px]"></i>
+                    <span>{{ subitem.name }}</span>
+                  </RouterLink>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Item sin subitems -->
+            <RouterLink
+              v-else
               :to="item.path"
               @click.native="sidebarOpen = false"
               :class="[
@@ -221,3 +291,4 @@ const userInitial = computed(() => {
     </main>
   </div>
 </template>
+2106

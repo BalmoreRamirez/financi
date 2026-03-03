@@ -25,14 +25,14 @@ const showPaymentsModal = ref(false)
 const editingCredit = ref<Credit | null>(null)
 const selectedCredit = ref<Credit | null>(null)
 const isEditing = ref(false)
-const selectedStatus = ref<'todos' | 'aprobado' | 'proceso' | 'completado'>('todos')
+const selectedStatus = ref<'activos' | 'aprobado' | 'proceso' | 'completado'>('activos')
 const paymentError = ref('')
 const paymentSuccess = ref('')
 const creditError = ref('')
 const creditSuccess = ref('')
 
 const statusOptions = [
-  { label: 'Todos', value: 'todos' },
+  { label: 'Activos', value: 'activos' },
   { label: 'Aprobado', value: 'aprobado' },
   { label: 'En Proceso', value: 'proceso' },
   { label: 'Completado', value: 'completado' }
@@ -63,8 +63,9 @@ const cashAccounts = computed(() =>
 )
 
 const filteredCredits = computed(() => {
-  if (selectedStatus.value === 'todos') {
-    return store.credits
+  if (selectedStatus.value === 'activos') {
+    // Mostrar solo créditos aprobado y en proceso
+    return store.credits.filter(credit => credit.estado === 'aprobado' || credit.estado === 'proceso')
   }
   return store.credits.filter(credit => credit.estado === selectedStatus.value)
 })
@@ -80,11 +81,12 @@ watch(selectedStatus, () => {
   first.value = 0
 })
 
-// Totales de créditos
-const totalMonto = computed(() => store.credits.reduce((sum, c) => sum + c.monto, 0))
-const totalTotal = computed(() => store.credits.reduce((sum, c) => sum + c.montoTotal, 0))
-const totalAbonado = computed(() => store.credits.reduce((sum, c) => sum + c.abonado, 0))
-const totalResta = computed(() => store.credits.reduce((sum, c) => sum + c.resta, 0))
+// Totales de créditos (solo activos: aprobado y en proceso)
+const activeCredits = computed(() => store.credits.filter(c => c.estado === 'aprobado' || c.estado === 'proceso'))
+const totalMonto = computed(() => activeCredits.value.reduce((sum, c) => sum + c.monto, 0))
+const totalTotal = computed(() => activeCredits.value.reduce((sum, c) => sum + c.montoTotal, 0))
+const totalAbonado = computed(() => activeCredits.value.reduce((sum, c) => sum + c.abonado, 0))
+const totalResta = computed(() => activeCredits.value.reduce((sum, c) => sum + c.resta, 0))
 
 const onPageChange = (event: { first: number; rows: number }) => {
   first.value = event.first
