@@ -139,11 +139,11 @@ const paymentsTableData = computed(() => {
 const creditsFooterData = computed(() => ({
   Nombre: '',
   Estado: '',
-  Monto: { text: `Total: ${formatCurrency(totalMonto.value)}`, align: 'right', class: 'text-primary' },
+  Monto: { text: `Total: ${formatCurrency(totalMonto.value)}`, align: 'left', class: 'text-primary' },
   Interés: '',
-  Total: { text: `Total: ${formatCurrency(totalTotal.value)}`, align: 'right', class: 'text-ink' },
-  Abonado: { text: `Total: ${formatCurrency(totalAbonado.value)}`, align: 'right', class: 'text-green-600' },
-  Resta: { text: `Total: ${formatCurrency(totalResta.value)}`, align: 'right', class: 'text-amber-600' },
+  Total: { text: `Total: ${formatCurrency(totalTotal.value)}`, align: 'left', class: 'text-ink' },
+  Abonado: { text: `Total: ${formatCurrency(totalAbonado.value)}`, align: 'left', class: 'text-green-600' },
+  Resta: { text: `Total: ${formatCurrency(totalResta.value)}`, align: 'left', class: 'text-amber-600' },
   'Fecha Inicio': '',
   'Fecha Fin': '',
   Acciones: ''

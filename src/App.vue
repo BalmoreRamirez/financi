@@ -94,8 +94,8 @@ const userInitial = computed(() => {
   <!-- App Layout (con sidebar) -->
   <div v-else class="flex min-h-screen bg-cloud">
     <!-- Topbar para móvil/tablet -->
-    <div class="flex items-center justify-between bg-ink text-white px-4 py-3 shadow z-20 w-full fixed top-0 left-0 md:hidden">
-      <button v-if="windowWidth <= 769" @click="sidebarOpen = true" class="p-2 focus:outline-none">
+    <div class="hidden max-[768px]:flex items-center justify-between bg-ink text-white px-4 py-3 shadow z-20 w-full fixed top-0 left-0">
+      <button v-if="windowWidth <= 768" @click="sidebarOpen = true" class="p-2 focus:outline-none">
         <i class="pi pi-bars text-2xl"></i>
       </button>
       <span class="font-bold text-lg">Financi</span>

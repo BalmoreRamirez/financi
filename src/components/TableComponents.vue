@@ -114,7 +114,7 @@ const emitAction = (action: string, row: TableRow) => {
                             'w-full',
                             cellAlignClass(footerData[column]),
                             cellContentClass(footerData[column]),
-                            'text-sm font-semibold !text-left'
+                            'text-sm font-semibold'
                         ]"
                     >
                         <template v-if="isCellObject(footerData[column]) && footerData[column].type === 'badge'">
