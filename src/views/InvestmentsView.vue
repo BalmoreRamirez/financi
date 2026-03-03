@@ -216,8 +216,8 @@ const deleteInvestment = (id: number) => {
     <!-- Indicadores resumen de flujo de inversiones -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
       <div class="bg-white rounded-xl shadow-card p-4 flex flex-col items-start">
-        <span class="text-xs text-gray-500 mb-1">Total Invertido</span>
-        <span class="text-lg font-bold text-primary">{{ formatCurrency(store.investments.reduce((sum, inv) => sum + inv.costo, 0)) }}</span>
+        <span class="text-xs text-gray-500 mb-1">Capital Activo</span>
+        <span class="text-lg font-bold text-primary">{{ formatCurrency(store.investments.filter(inv => !inv.vendida).reduce((sum, inv) => sum + inv.costo, 0)) }}</span>
       </div>
       <div class="bg-white rounded-xl shadow-card p-4 flex flex-col items-start">
         <span class="text-xs text-gray-500 mb-1">Total Vendido</span>
@@ -225,7 +225,7 @@ const deleteInvestment = (id: number) => {
       </div>
       <div class="bg-white rounded-xl shadow-card p-4 flex flex-col items-start">
         <span class="text-xs text-gray-500 mb-1">Ganancia Estimada</span>
-        <span class="text-lg font-bold text-orange-500">{{ formatCurrency(store.totalEstimatedGains) }}</span>
+        <span class="text-lg font-bold text-orange-500">{{ formatCurrency(store.investments.filter(inv => !inv.vendida).reduce((sum, inv) => sum + inv.gananciaEstimada, 0)) }}</span>
       </div>
       <div class="bg-white rounded-xl shadow-card p-4 flex flex-col items-start">
         <span class="text-xs text-gray-500 mb-1">Ganancia Realizada</span>
@@ -236,7 +236,7 @@ const deleteInvestment = (id: number) => {
       <div>
         <ViewTitle title="Inversiones" />
         <p class="text-sm text-gray-500 mt-1">
-          Ganancia estimada: {{ formatCurrency(store.totalEstimatedGains) }} | 
+          Capital activo: {{ formatCurrency(store.investments.filter(inv => !inv.vendida).reduce((sum, inv) => sum + inv.costo, 0)) }} |
           Ganancia realizada: {{ formatCurrency(store.totalGains) }}
         </p>
       </div>

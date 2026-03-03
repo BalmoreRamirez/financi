@@ -29,8 +29,8 @@ const summaryCards = computed(() => [
     color: 'bg-amber-600'
   },
   {
-    title: 'Inversiones Totales',
-    value: store.totalInvestments,
+    title: 'Inventario Inversiones',
+    value: store.accounts.find(a => a.nombre === 'Inventario Inversiones')?.saldo ?? 0,
     icon: 'pi-chart-line',
     color: 'bg-blue-600'
   }
