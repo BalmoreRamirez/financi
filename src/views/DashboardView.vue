@@ -35,6 +35,14 @@ const summaryCards = computed(() => [
     color: 'bg-blue-600'
   }
 ])
+
+// Gastos operativos recientes
+const recentExpenses = computed(() => {
+  return store.transactions
+    .filter(t => t.detalles.some(d => d.accountName === 'Gastos Operativos'))
+    .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+    .slice(0, 3)
+})
 </script>
 
 <template>
@@ -61,7 +69,7 @@ const summaryCards = computed(() => [
     </div>
 
     <!-- Recent Activity -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Recent Credits -->
       <div class="bg-white rounded-xl shadow-card p-6">
         <div class="flex items-center justify-between mb-4">
@@ -117,6 +125,39 @@ const summaryCards = computed(() => [
                 {{ investment.vendida ? '+' : '~' }}{{ formatCurrency(investment.vendida ? investment.gananciaReal : investment.gananciaEstimada) }}
               </p>
               <p class="text-xs text-gray-500">{{ investment.vendida ? 'realizada' : 'estimada' }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Expenses -->
+      <div class="bg-white rounded-xl shadow-card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-ink">Gastos Recientes</h2>
+          <RouterLink to="/expenses" class="text-primary hover:underline text-sm">
+            Ver todos <i class="pi pi-arrow-right text-xs"></i>
+          </RouterLink>
+        </div>
+        <div v-if="recentExpenses.length === 0" class="text-center py-8">
+          <i class="pi pi-inbox text-4xl text-gray-300 mb-3"></i>
+          <p class="text-gray-500 text-sm">No hay gastos registrados</p>
+        </div>
+        <div v-else class="space-y-3">
+          <div
+            v-for="expense in recentExpenses"
+            :key="expense.id"
+            class="flex items-center justify-between p-3 bg-cloud rounded-lg"
+          >
+            <div class="flex items-center gap-3">
+              <i class="pi pi-arrow-up-right text-orange-600"></i>
+              <div>
+                <p class="font-medium text-ink text-sm">{{ expense.descripcion }}</p>
+                <p class="text-xs text-gray-500">{{ new Date(expense.fecha).toLocaleDateString('es-MX') }}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="font-semibold text-orange-600">-{{ formatCurrency(expense.totalDebe) }}</p>
+              <p class="text-xs text-gray-500">gasto</p>
             </div>
           </div>
         </div>

@@ -368,12 +368,12 @@ const getMonthName = (mes: number) => {
             ]"></i>
           </div>
           <div>
-            <p class="text-gray-500 text-sm">Utilidad del Periodo</p>
+            <p class="text-gray-500 text-sm">Resultado del Periodo</p>
             <p :class="[
               'text-2xl font-bold',
               utilidadNeta >= 0 ? 'text-green-600' : 'text-red-600'
             ]">{{ formatCurrency(utilidadNeta) }}</p>
-            <p class="text-xs text-gray-400">Ingresos - Gastos</p>
+            <p class="text-xs text-gray-400">Resultado = Ingresos - Gastos</p>
           </div>
         </div>
       </div>
@@ -387,14 +387,14 @@ const getMonthName = (mes: number) => {
           <div>
             <p class="text-gray-500 text-sm">Patrimonio Total</p>
             <p class="text-2xl font-bold text-blue-600">{{ formatCurrency(patrimonioTotal) }}</p>
-            <p class="text-xs text-gray-400">Capital + Utilidad</p>
+            <p class="text-xs text-gray-400">Capital + Resultado</p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Resumen Ingresos/Gastos -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
       <div class="bg-white rounded-xl shadow-sm p-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
@@ -418,6 +418,9 @@ const getMonthName = (mes: number) => {
         </div>
       </div>
     </div>
+    <p class="text-xs text-gray-500 mb-6">
+      Los gastos no disminuyen la cuenta de ingresos; disminuyen el resultado del periodo y el patrimonio total.
+    </p>
 
     <!-- Transactions History -->
     <div class="bg-white rounded-xl shadow-sm overflow-hidden">
