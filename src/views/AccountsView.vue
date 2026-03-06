@@ -19,10 +19,12 @@ const rows = ref(10)
 
 // Modal state
 const showModal = ref(false)
+const showMovementsModal = ref(false)
 const isEditing = ref(false)
 const editingId = ref<number | null>(null)
 const errorMessage = ref('')
 const successMessage = ref('')
+const selectedAccount = ref<{ id: number; nombre: string; descripcion?: string; tipo: AccountType; saldo: number } | null>(null)
 
 // Form data
 const formData = ref({
@@ -139,7 +141,13 @@ const deleteAccount = (id: number) => {
 
 const accountTableData = computed(() => {
   return paginatedAccounts.value.map((account) => ({
-    Cuenta: { text: account.nombre, class: 'font-medium' },
+    Cuenta: {
+      type: 'click',
+      text: account.nombre,
+      icon: 'pi-history',
+      action: 'view-movements',
+      class: 'font-medium text-primary hover:underline'
+    },
     Descripción: account.descripcion || '-',
     Tipo: { type: 'badge', label: account.tipo.toUpperCase(), class: getAccountBadgeClass(account.tipo), align: 'center' },
     Saldo: {
@@ -174,8 +182,78 @@ const onAccountTableAction = (payload: { action: string; row: Record<string, unk
   const account = payload.row.__raw as { id: number; nombre: string; descripcion?: string; tipo: AccountType; saldo: number } | undefined
   if (!account) return
 
+  if (payload.action === 'view-movements') {
+    selectedAccount.value = account
+    showMovementsModal.value = true
+    return
+  }
+
   if (payload.action === 'edit') openEditModal(account)
   if (payload.action === 'delete') deleteAccount(account.id)
+}
+
+const formatDate = (fecha: string) => {
+  return new Date(fecha).toLocaleDateString('es-MX', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+const accountMovements = computed(() => {
+  if (!selectedAccount.value) return []
+
+  const movementsAsc = [...store.transactions]
+    .filter(tx => tx.detalles.some(d => d.accountId === selectedAccount.value?.id))
+    .sort((a, b) => {
+      const byDate = new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
+      if (byDate !== 0) return byDate
+      const aCreatedAt = new Date(a.createdAt).getTime()
+      const bCreatedAt = new Date(b.createdAt).getTime()
+      return aCreatedAt - bCreatedAt
+    })
+    .map(tx => {
+      const detail = tx.detalles.find(d => d.accountId === selectedAccount.value?.id)
+      const debe = detail?.debe ?? 0
+      const haber = detail?.haber ?? 0
+
+      const accountType = selectedAccount.value?.tipo
+      const netEffect = accountType === 'activo' || accountType === 'gasto'
+        ? debe - haber
+        : haber - debe
+
+      return {
+        id: tx.id,
+        fecha: tx.fecha,
+        descripcion: tx.descripcion,
+        debe,
+        haber,
+        netEffect
+      }
+    })
+
+  const totalEffect = movementsAsc.reduce((sum, movement) => sum + movement.netEffect, 0)
+  let runningBalance = selectedAccount.value.saldo - totalEffect
+
+  const movementsWithBalances = movementsAsc.map((movement) => {
+    const saldoAntes = runningBalance
+    const saldoDespues = saldoAntes + movement.netEffect
+    runningBalance = saldoDespues
+
+    return {
+      ...movement,
+      saldoAntes,
+      saldoDespues,
+      alimenta: movement.netEffect >= 0
+    }
+  })
+
+  return movementsWithBalances.reverse()
+})
+
+const closeMovementsModal = () => {
+  showMovementsModal.value = false
+  selectedAccount.value = null
 }
 </script>
 
@@ -286,6 +364,73 @@ const onAccountTableAction = (payload: { action: string; row: Record<string, unk
             {{ isEditing ? 'Actualizar' : 'Crear Cuenta' }}
           </button>
         </div>
+      </template>
+    </Dialog>
+
+    <!-- Movimientos por cuenta -->
+    <Dialog
+      v-model:visible="showMovementsModal"
+      :header="selectedAccount ? `Movimientos - ${selectedAccount.nombre}` : 'Movimientos de Cuenta'"
+      :modal="true"
+      :style="{ width: '800px' }"
+      @hide="closeMovementsModal"
+    >
+      <div class="space-y-4" v-if="selectedAccount">
+        <div class="bg-gray-50 rounded-lg p-4 text-sm">
+          <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <p class="text-gray-700">
+              <span class="font-medium">Tipo:</span> {{ selectedAccount.tipo.toUpperCase() }}
+            </p>
+            <p class="text-gray-700">
+              <span class="font-medium">Saldo actual:</span> {{ formatCurrency(selectedAccount.saldo) }}
+            </p>
+          </div>
+        </div>
+
+        <div v-if="accountMovements.length === 0" class="text-center py-8 text-gray-500">
+          No hay movimientos para esta cuenta.
+        </div>
+
+        <div v-else class="border border-gray-200 rounded-lg overflow-hidden">
+          <div class="grid grid-cols-12 gap-2 bg-gray-100 px-3 py-2 text-xs font-medium text-gray-700">
+            <span class="col-span-2">Fecha</span>
+            <span class="col-span-4">Descripción</span>
+            <span class="col-span-2 text-right">Debe</span>
+            <span class="col-span-2 text-right">Haber</span>
+            <span class="col-span-2 text-right">Antes / Después</span>
+          </div>
+
+          <div
+            v-for="movement in accountMovements"
+            :key="movement.id"
+            class="grid grid-cols-12 gap-2 px-3 py-2 text-sm border-t border-gray-100"
+          >
+            <span class="col-span-2 text-gray-600">{{ formatDate(movement.fecha) }}</span>
+            <span class="col-span-4 text-gray-800 truncate" :title="movement.descripcion">{{ movement.descripcion }}</span>
+            <span class="col-span-2 text-right text-gray-800">{{ movement.debe > 0 ? formatCurrency(movement.debe) : '-' }}</span>
+            <span class="col-span-2 text-right text-gray-800">{{ movement.haber > 0 ? formatCurrency(movement.haber) : '-' }}</span>
+            <span
+              class="col-span-2 text-right"
+            >
+              <span class="block text-xs text-gray-500">{{ formatCurrency(movement.saldoAntes) }}</span>
+              <span
+                class="block font-medium"
+                :class="movement.alimenta ? 'text-green-600' : 'text-red-600'"
+              >
+                {{ formatCurrency(movement.saldoDespues) }}
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <button
+          @click="closeMovementsModal"
+          class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+        >
+          Cerrar
+        </button>
       </template>
     </Dialog>
   </div>

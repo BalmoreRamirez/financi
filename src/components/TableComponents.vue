@@ -51,6 +51,10 @@ const cellContentClass = (cell: any) => {
 const emitAction = (action: string, row: TableRow) => {
     emit('action', { action, row })
 }
+
+const emitCellAction = (action: string, row: TableRow) => {
+    emitAction(action, row)
+}
 </script>
 
 <template>
@@ -99,6 +103,23 @@ const emitAction = (action: string, row: TableRow) => {
                                     <i :class="['pi', action.icon]" />
                                 </button>
                             </div>
+                        </template>
+
+                        <template v-else-if="isCellObject(slotProps.data[column]) && slotProps.data[column].type === 'click'">
+                            <button
+                                type="button"
+                                :class="[
+                                    'text-left transition inline-flex items-center gap-1.5',
+                                    slotProps.data[column].class ?? 'text-primary hover:underline'
+                                ]"
+                                @click="emitCellAction(slotProps.data[column].action, slotProps.data)"
+                            >
+                                <i
+                                    v-if="slotProps.data[column].icon"
+                                    :class="['pi text-xs', slotProps.data[column].icon]"
+                                />
+                                {{ cellText(slotProps.data[column]) }}
+                            </button>
                         </template>
 
                         <template v-else>

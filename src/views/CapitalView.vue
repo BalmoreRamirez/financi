@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useFinanceStore } from '../stores/finance'
+import { useFinanceStore, type AccountingClosure, type Transaction } from '../stores/finance'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
@@ -14,11 +14,14 @@ const store = useFinanceStore()
 // Modal state
 const showModal = ref(false)
 const showClosingModal = ref(false)
+const showClosureDetailModal = ref(false)
 const operationType = ref<'aporte' | 'retiro'>('aporte')
 const errorMessage = ref('')
 const successMessage = ref('')
 const closingError = ref('')
 const closingSuccess = ref('')
+const selectedClosure = ref<AccountingClosure | null>(null)
+const selectedTransaction = ref<Transaction | null>(null)
 
 // Form data
 const formData = ref({
@@ -235,7 +238,7 @@ const processOperation = () => {
   }
 }
 
-const getTransactionType = (tx: typeof capitalTransactions.value[0]) => {
+const getTransactionType = (tx: Transaction) => {
   const capitalDetail = tx.detalles.find(d => d.accountName === 'Capital')
   if (!capitalDetail) return 'movimiento'
   // Detectar si es un cierre contable
@@ -243,7 +246,7 @@ const getTransactionType = (tx: typeof capitalTransactions.value[0]) => {
   return capitalDetail.haber > 0 ? 'aporte' : 'retiro'
 }
 
-const getTransactionAmount = (tx: typeof capitalTransactions.value[0]) => {
+const getTransactionAmount = (tx: Transaction) => {
   const capitalDetail = tx.detalles.find(d => d.accountName === 'Capital')
   if (!capitalDetail) return 0
   return capitalDetail.haber > 0 ? capitalDetail.haber : capitalDetail.debe
@@ -304,6 +307,31 @@ const performClosing = () => {
 
 const getMonthName = (mes: number) => {
   return new Date(2000, mes - 1).toLocaleDateString('es-MX', { month: 'long' })
+}
+
+const selectedClosureTransaction = computed<Transaction | null>(() => {
+  if (selectedTransaction.value) return selectedTransaction.value
+  if (!selectedClosure.value) return null
+  return store.transactions.find(tx => tx.id === selectedClosure.value?.transactionId) ?? null
+})
+
+const openClosureDetailModal = (closure: AccountingClosure) => {
+  selectedTransaction.value = null
+  selectedClosure.value = closure
+  showClosureDetailModal.value = true
+}
+
+const openClosureDetailFromTransaction = (tx: Transaction) => {
+  if (getTransactionType(tx) !== 'cierre') return
+  selectedTransaction.value = tx
+  selectedClosure.value = store.sortedClosures.find(c => c.transactionId === tx.id) ?? null
+  showClosureDetailModal.value = true
+}
+
+const closeClosureDetailModal = () => {
+  showClosureDetailModal.value = false
+  selectedTransaction.value = null
+  selectedClosure.value = null
 }
 </script>
 
@@ -437,7 +465,11 @@ const getMonthName = (mes: number) => {
         <div 
           v-for="tx in capitalTransactions" 
           :key="tx.id"
-          class="p-4 hover:bg-gray-50 transition-colors"
+          :class="[
+            'p-4 transition-colors',
+            getTransactionType(tx) === 'cierre' ? 'hover:bg-gray-50 cursor-pointer' : ''
+          ]"
+          @click="openClosureDetailFromTransaction(tx)"
         >
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-4">
@@ -684,12 +716,21 @@ const getMonthName = (mes: number) => {
             <div 
               v-for="closure in store.sortedClosures.slice(0, 5)" 
               :key="closure.id"
-              class="flex justify-between text-xs bg-gray-100 rounded px-3 py-2"
+              class="flex items-center justify-between text-xs bg-gray-100 rounded px-3 py-2 gap-2"
             >
-              <span class="text-gray-600">{{ getMonthName(closure.mes) }} {{ closure.anio }}</span>
-              <span :class="closure.utilidadNeta >= 0 ? 'text-green-600' : 'text-red-600'">
-                {{ formatCurrency(closure.utilidadNeta) }}
-              </span>
+              <div class="flex items-center gap-3 min-w-0">
+                <span class="text-gray-600 truncate">{{ getMonthName(closure.mes) }} {{ closure.anio }}</span>
+                <span :class="closure.utilidadNeta >= 0 ? 'text-green-600' : 'text-red-600'">
+                  {{ formatCurrency(closure.utilidadNeta) }}
+                </span>
+              </div>
+              <button
+                @click="openClosureDetailModal(closure)"
+                type="button"
+                class="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-white transition"
+              >
+                Ver detalle
+              </button>
             </div>
           </div>
         </div>
@@ -717,6 +758,91 @@ const getMonthName = (mes: number) => {
             Realizar Cierre
           </button>
         </div>
+      </template>
+    </Dialog>
+
+    <!-- Modal Detalle de Cierre -->
+    <Dialog
+      v-model:visible="showClosureDetailModal"
+      modal
+      header="Detalle del Cierre Contable"
+      :style="{ width: '600px' }"
+      :closable="true"
+      @hide="closeClosureDetailModal"
+    >
+      <div v-if="selectedClosure || selectedClosureTransaction" class="space-y-4">
+        <div class="bg-gray-50 rounded-lg p-4 text-sm space-y-1">
+          <p v-if="selectedClosure" class="text-gray-700">
+            <span class="font-medium">Periodo:</span>
+            {{ getMonthName(selectedClosure.mes) }} {{ selectedClosure.anio }}
+          </p>
+          <p class="text-gray-700">
+            <span class="font-medium">Resultado del cierre:</span>
+            <span
+              :class="(selectedClosure?.utilidadNeta ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'"
+            >
+              {{ formatCurrency(selectedClosure?.utilidadNeta ?? getTransactionAmount(selectedClosureTransaction!)) }}
+            </span>
+          </p>
+          <p v-if="selectedClosure" class="text-gray-500 text-xs">
+            Fecha de registro: {{ formatDate(selectedClosure.fecha) }}
+          </p>
+          <p v-else-if="selectedClosureTransaction" class="text-gray-500 text-xs">
+            Fecha de transacción: {{ formatDate(selectedClosureTransaction.fecha) }}
+          </p>
+        </div>
+
+        <div v-if="selectedClosureTransaction" class="space-y-3">
+          <div>
+            <h4 class="font-medium text-gray-800">Movimientos del asiento</h4>
+            <p class="text-xs text-gray-500">{{ selectedClosureTransaction.descripcion }}</p>
+          </div>
+
+          <div class="border border-gray-200 rounded-lg overflow-hidden">
+            <div class="grid grid-cols-12 gap-2 bg-gray-100 px-3 py-2 text-xs font-medium text-gray-700">
+              <span class="col-span-6">Cuenta</span>
+              <span class="col-span-3 text-right">Debe</span>
+              <span class="col-span-3 text-right">Haber</span>
+            </div>
+            <div
+              v-for="(detalle, index) in selectedClosureTransaction.detalles"
+              :key="`${detalle.accountId}-${index}`"
+              class="grid grid-cols-12 gap-2 px-3 py-2 text-sm border-t border-gray-100"
+            >
+              <span class="col-span-6 text-gray-700">{{ detalle.accountName }}</span>
+              <span class="col-span-3 text-right text-gray-800">
+                {{ detalle.debe > 0 ? formatCurrency(detalle.debe) : '-' }}
+              </span>
+              <span class="col-span-3 text-right text-gray-800">
+                {{ detalle.haber > 0 ? formatCurrency(detalle.haber) : '-' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div class="bg-gray-50 rounded p-3 flex items-center justify-between">
+              <span class="text-gray-600">Total Debe</span>
+              <span class="font-semibold text-gray-800">{{ formatCurrency(selectedClosureTransaction.totalDebe) }}</span>
+            </div>
+            <div class="bg-gray-50 rounded p-3 flex items-center justify-between">
+              <span class="text-gray-600">Total Haber</span>
+              <span class="font-semibold text-gray-800">{{ formatCurrency(selectedClosureTransaction.totalHaber) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <Message v-else severity="warn" :closable="false">
+          No se encontró la transacción asociada a este cierre.
+        </Message>
+      </div>
+
+      <template #footer>
+        <button
+          @click="closeClosureDetailModal"
+          class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+        >
+          Cerrar
+        </button>
       </template>
     </Dialog>
   </div>
