@@ -189,6 +189,27 @@ export const useFinanceStore = defineStore('finance', () => {
   const totalGains = computed(() => investments.value.reduce((sum, i) => sum + i.gananciaReal, 0))
   const totalEstimatedGains = computed(() => investments.value.reduce((sum, i) => sum + i.gananciaEstimada, 0))
 
+  const normalizeAccountName = (name: string) =>
+    name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+
+  const isCashOrBankAccount = (account: LedgerAccount) => {
+    const normalized = normalizeAccountName(account.nombre)
+    return normalized === 'caja' || normalized === 'banco'
+  }
+
+  const isInvestmentFundAccount = (account: LedgerAccount) => {
+    if (account.tipo !== 'activo') return false
+    const normalized = normalizeAccountName(account.nombre)
+    return normalized.includes('fondo') || normalized.includes('inversion')
+  }
+
+  const isInvestmentSourceAccount = (account: LedgerAccount) =>
+    isCashOrBankAccount(account) || isInvestmentFundAccount(account)
+
   // Update account balances
   const updateAccountBalances = () => {
     const prestamosAccount = accounts.value.find(a => a.nombre === 'Préstamos por Cobrar')
@@ -215,7 +236,7 @@ export const useFinanceStore = defineStore('finance', () => {
     }
 
     // RN-04: El dinero debe salir de caja o banco
-    if (origenAccount.nombre !== 'Caja' && origenAccount.nombre !== 'Banco') {
+    if (!isCashOrBankAccount(origenAccount)) {
       return { success: false, message: 'El préstamo debe salir de Caja o Banco (RN-04)' }
     }
 
@@ -380,7 +401,7 @@ export const useFinanceStore = defineStore('finance', () => {
     if (!origenAccount) return { success: false, message: 'Cuenta de origen no encontrada' }
     
     // RN-04: El pago debe venir de caja o banco
-    if (origenAccount.nombre !== 'Caja' && origenAccount.nombre !== 'Banco') {
+    if (!isCashOrBankAccount(origenAccount)) {
       return { success: false, message: 'El pago debe recibirse en Caja o Banco (RN-04)' }
     }
 
@@ -466,8 +487,8 @@ export const useFinanceStore = defineStore('finance', () => {
     }
 
     // RN-04: El dinero debe salir de caja o banco
-    if (origenAccount.nombre !== 'Caja' && origenAccount.nombre !== 'Banco') {
-      return { success: false, message: 'La inversión debe salir de Caja o Banco (RN-04)' }
+    if (!isInvestmentSourceAccount(origenAccount)) {
+      return { success: false, message: 'La inversión debe salir de Caja, Banco o Fondo de Inversión' }
     }
 
     // Validar que haya saldo suficiente
@@ -615,7 +636,7 @@ export const useFinanceStore = defineStore('finance', () => {
     }
 
     // RN-04: Todo ingreso debe impactar caja o banco
-    if (destinoAccount.nombre !== 'Caja' && destinoAccount.nombre !== 'Banco') {
+    if (!isCashOrBankAccount(destinoAccount)) {
       return { success: false, message: 'El ingreso debe ir a Caja o Banco (RN-04)' }
     }
 

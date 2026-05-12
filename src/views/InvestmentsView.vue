@@ -38,11 +38,41 @@ const sellForm = ref({
   destinoAccountId: null as number | null
 })
 
-// RN-04: Solo cuentas Caja o Banco para recibir el dinero
+const normalizeAccountName = (name: string) =>
+  name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+
+const isCashOrBankAccount = (name: string) => {
+  const normalized = normalizeAccountName(name)
+  return normalized === 'caja' || normalized === 'banco'
+}
+
+const isInvestmentFundAccount = (account: { nombre: string; tipo: string }) => {
+  if (account.tipo !== 'activo') return false
+  const normalized = normalizeAccountName(account.nombre)
+  return normalized.includes('fondo') || normalized.includes('inversion')
+}
+
+const accountOption = (account: { id: number; nombre: string; saldo: number }) => ({
+  label: `${account.nombre} (${formatCurrency(account.saldo)})`,
+  value: account.id
+})
+
+// Cuenta de origen para inversión: Caja, Banco o Fondo de Inversión
+const investmentSourceAccounts = computed(() =>
+  store.accounts
+    .filter(a => isCashOrBankAccount(a.nombre) || isInvestmentFundAccount(a))
+    .map(accountOption)
+)
+
+// RN-04: Solo Caja o Banco para recibir ingresos
 const cashAccounts = computed(() => 
   store.accounts
-    .filter(a => a.nombre === 'Caja' || a.nombre === 'Banco')
-    .map(a => ({ label: `${a.nombre} (${formatCurrency(a.saldo)})`, value: a.id }))
+    .filter(a => isCashOrBankAccount(a.nombre))
+    .map(accountOption)
 )
 
 // Inversiones paginadas
@@ -156,7 +186,7 @@ const saveInvestment = () => {
   } else {
     // Nueva inversión requiere cuenta de origen
     if (!form.value.origenAccountId) {
-      errorMessage.value = 'Seleccione la cuenta de origen de la inversión (RN-04)'
+      errorMessage.value = 'Seleccione la cuenta de origen de la inversión'
       return
     }
     
@@ -303,14 +333,14 @@ const deleteInvestment = (id: number) => {
           <label class="block text-sm font-medium text-ink mb-1">Cuenta de origen (RN-04)</label>
           <Select
             v-model="form.origenAccountId"
-            :options="cashAccounts"
+            :options="investmentSourceAccounts"
             optionLabel="label"
             optionValue="value"
-            placeholder="Seleccionar Caja o Banco"
+            placeholder="Seleccionar cuenta de origen"
             class="w-full"
             :pt="unifiedSelectPt"
           />
-          <p class="text-xs text-gray-500 mt-1">El dinero de la inversión saldrá de esta cuenta</p>
+          <p class="text-xs text-gray-500 mt-1">El dinero de la inversión saldrá de Caja, Banco o un Fondo de Inversión</p>
         </div>
         
         <Message severity="info" :closable="false">
