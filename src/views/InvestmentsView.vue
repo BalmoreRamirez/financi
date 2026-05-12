@@ -50,6 +50,11 @@ const isCashOrBankAccount = (name: string) => {
   return normalized === 'caja' || normalized === 'banco'
 }
 
+const isInvestmentInventoryAccount = (name: string) => {
+  const normalized = normalizeAccountName(name)
+  return normalized === 'inventario inversiones'
+}
+
 const isInvestmentFundAccount = (account: { nombre: string; tipo: string }) => {
   if (account.tipo !== 'activo') return false
   const normalized = normalizeAccountName(account.nombre)
@@ -61,10 +66,13 @@ const accountOption = (account: { id: number; nombre: string; saldo: number }) =
   value: account.id
 })
 
-// Cuenta de origen para inversión: Caja, Banco o Fondo de Inversión
+// Cuenta de origen para inversión: Caja, Banco o Fondo de Inversión (no inventario)
 const investmentSourceAccounts = computed(() =>
   store.accounts
-    .filter(a => isCashOrBankAccount(a.nombre) || isInvestmentFundAccount(a))
+    .filter(a =>
+      isCashOrBankAccount(a.nombre) ||
+      (isInvestmentFundAccount(a) && !isInvestmentInventoryAccount(a.nombre))
+    )
     .map(accountOption)
 )
 
@@ -340,7 +348,7 @@ const deleteInvestment = (id: number) => {
             class="w-full"
             :pt="unifiedSelectPt"
           />
-          <p class="text-xs text-gray-500 mt-1">El dinero de la inversión saldrá de Caja, Banco o un Fondo de Inversión</p>
+          <p class="text-xs text-gray-500 mt-1">El dinero saldrá de Caja, Banco o un Fondo de Inversión dedicado</p>
         </div>
         
         <Message severity="info" :closable="false">

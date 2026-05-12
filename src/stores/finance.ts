@@ -201,6 +201,11 @@ export const useFinanceStore = defineStore('finance', () => {
     return normalized === 'caja' || normalized === 'banco'
   }
 
+  const isInvestmentInventoryAccount = (account: LedgerAccount) => {
+    const normalized = normalizeAccountName(account.nombre)
+    return normalized === 'inventario inversiones'
+  }
+
   const isInvestmentFundAccount = (account: LedgerAccount) => {
     if (account.tipo !== 'activo') return false
     const normalized = normalizeAccountName(account.nombre)
@@ -208,7 +213,7 @@ export const useFinanceStore = defineStore('finance', () => {
   }
 
   const isInvestmentSourceAccount = (account: LedgerAccount) =>
-    isCashOrBankAccount(account) || isInvestmentFundAccount(account)
+    isCashOrBankAccount(account) || (isInvestmentFundAccount(account) && !isInvestmentInventoryAccount(account))
 
   // Update account balances
   const updateAccountBalances = () => {
@@ -504,6 +509,10 @@ export const useFinanceStore = defineStore('finance', () => {
         tipo: 'activo',
         saldo: 0
       })
+    }
+
+    if (origenAccount.id === inversionesAccount.id) {
+      return { success: false, message: 'Selecciona una cuenta de origen diferente a "Inventario Inversiones"' }
     }
 
     const newInvestment: Investment = {

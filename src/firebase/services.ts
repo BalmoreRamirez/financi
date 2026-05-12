@@ -13,6 +13,23 @@ import {
 import { db } from './config'
 import type { Credit, Investment, LedgerAccount, Transaction } from '../stores/finance'
 
+const hashFirestoreId = (value: string): number => {
+  let hash = 0
+  for (let i = 0; i < value.length; i += 1) {
+    hash = ((hash << 5) - hash + value.charCodeAt(i)) | 0
+  }
+  return Math.abs(hash) || 1
+}
+
+const resolveNumericId = (firestoreId: string, rawId: unknown): number => {
+  if (typeof rawId === 'number' && Number.isFinite(rawId)) return rawId
+  if (typeof rawId === 'string') {
+    const parsed = Number(rawId)
+    if (Number.isFinite(parsed)) return parsed
+  }
+  return hashFirestoreId(firestoreId)
+}
+
 // Collection names
 const COLLECTIONS = {
   CREDITS: 'credits',
@@ -27,11 +44,14 @@ export const creditsCollection = collection(db, COLLECTIONS.CREDITS)
 export const subscribeToCredits = (callback: (credits: Credit[]) => void): Unsubscribe => {
   const q = query(creditsCollection, orderBy('fechaInicio', 'desc'))
   return onSnapshot(q, (snapshot) => {
-    const credits = snapshot.docs.map(doc => ({
-      id: parseInt(doc.id) || Date.now(),
-      firestoreId: doc.id,
-      ...doc.data()
-    })) as (Credit & { firestoreId: string })[]
+    const credits = snapshot.docs.map(doc => {
+      const data = doc.data() as Partial<Credit> & { id?: number | string }
+      return {
+        ...data,
+        id: resolveNumericId(doc.id, data.id),
+        firestoreId: doc.id
+      }
+    }) as (Credit & { firestoreId: string })[]
     callback(credits)
   })
 }
@@ -56,11 +76,14 @@ export const investmentsCollection = collection(db, COLLECTIONS.INVESTMENTS)
 
 export const subscribeToInvestments = (callback: (investments: Investment[]) => void): Unsubscribe => {
   return onSnapshot(investmentsCollection, (snapshot) => {
-    const investments = snapshot.docs.map(doc => ({
-      id: parseInt(doc.id) || Date.now(),
-      firestoreId: doc.id,
-      ...doc.data()
-    })) as (Investment & { firestoreId: string })[]
+    const investments = snapshot.docs.map(doc => {
+      const data = doc.data() as Partial<Investment> & { id?: number | string }
+      return {
+        ...data,
+        id: resolveNumericId(doc.id, data.id),
+        firestoreId: doc.id
+      }
+    }) as (Investment & { firestoreId: string })[]
     callback(investments)
   })
 }
@@ -85,11 +108,14 @@ export const accountsCollection = collection(db, COLLECTIONS.ACCOUNTS)
 
 export const subscribeToAccounts = (callback: (accounts: LedgerAccount[]) => void): Unsubscribe => {
   return onSnapshot(accountsCollection, (snapshot) => {
-    const accounts = snapshot.docs.map(doc => ({
-      id: parseInt(doc.id) || Date.now(),
-      firestoreId: doc.id,
-      ...doc.data()
-    })) as (LedgerAccount & { firestoreId: string })[]
+    const accounts = snapshot.docs.map(doc => {
+      const data = doc.data() as Partial<LedgerAccount> & { id?: number | string }
+      return {
+        ...data,
+        id: resolveNumericId(doc.id, data.id),
+        firestoreId: doc.id
+      }
+    }) as (LedgerAccount & { firestoreId: string })[]
     callback(accounts)
   })
 }
@@ -115,11 +141,14 @@ export const transactionsCollection = collection(db, COLLECTIONS.TRANSACTIONS)
 export const subscribeToTransactions = (callback: (transactions: Transaction[]) => void): Unsubscribe => {
   const q = query(transactionsCollection, orderBy('createdAt', 'desc'))
   return onSnapshot(q, (snapshot) => {
-    const transactions = snapshot.docs.map(doc => ({
-      id: parseInt(doc.id) || Date.now(),
-      firestoreId: doc.id,
-      ...doc.data()
-    })) as (Transaction & { firestoreId: string })[]
+    const transactions = snapshot.docs.map(doc => {
+      const data = doc.data() as Partial<Transaction> & { id?: number | string }
+      return {
+        ...data,
+        id: resolveNumericId(doc.id, data.id),
+        firestoreId: doc.id
+      }
+    }) as (Transaction & { firestoreId: string })[]
     callback(transactions)
   })
 }
